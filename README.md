@@ -48,7 +48,7 @@ CardKnotは、ブラウザ上で直感的にカードを作成・配置・接続
 
 1.  リポジトリをクローン
     ```bash
-    git clone https://github.com/yourusername/CardKnot.git
+    git clone https://github.com/eimax9668/CardKnot.git
     cd CardKnot
     ```
 
