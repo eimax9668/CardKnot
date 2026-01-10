@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head prefix="og:http://ogp.me/ns#">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="CardKnotについて - 思考を解き放つ無限キャンバス">
+    <meta property="og:description" content="CardKnotは、無限のキャンバスでアイデアを整理し、直感的につなぎ合わせることができる思考整理ツールです。">
+    <meta property="og:image" content="https://cardknot.f5.si/images/image.png">
+    <meta property="og:url" content="https://cardknot.f5.si">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="CardKnot">
+    <meta property="og:locale" content="ja_JP">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CardKnotについて - 思考を解き放つ無限キャンバス">
+    <meta name="twitter:image" content="https://cardknot.f5.si/images/image.png">
+    <meta description="CardKnotは、無限のキャンバスでアイデアを整理し、直感的につなぎ合わせることができる思考整理ツールです。">
+    <link rel="icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <title>CardKnot</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@100;200;300;400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link href="./dist/output.css" rel="stylesheet">
+</head>
+<body>
+
+
+    
+    <!-- Zoom Controls -->
+    <div class="zoom-controls">
+        <div class="zoom-btn" onclick="adjustZoom(1.2)" title="拡大"><i class="bi bi-plus-lg"></i></div>
+        <div id="zoom-percent">100%</div>
+        <div class="zoom-btn" onclick="adjustZoom(0.8)" title="縮小"><i class="bi bi-dash-lg"></i></div>
+        <div class="h-px bg-gray-100 mx-1 my-1"></div>
+        <div class="zoom-btn" onclick="resetZoom()" title="リセット"><i class="bi bi-aspect-ratio"></i></div>
+        <div class="h-px bg-gray-100 mx-1 my-1"></div>
+        <div id="dark-mode-btn" class="zoom-btn" onclick="toggleDarkMode()" title="ダークモード切替"><i class="bi bi-moon"></i></div>
+    </div>
+
+    <div id="viewport">
+  <div id="canvas-zoom-wrap">
+    <div id="canvas">
+      <svg id="connections-layer"></svg>
+    </div>
+  </div>
+</div>
+
+    <!-- Presentation Overlay -->
+    <div id="presentation-overlay">
+        <div class="flex justify-between items-center p-6 z-[2010]">
+            <div class="text-xl font-bold opacity-100"><i class="bi bi-play-circle mr-2"></i>スライドショー</div>
+            <button id="pres-close" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-full font-bold transition-colors shadow-lg" onclick="exitPresentation()">
+                <i class="bi bi-x-lg"></i> 終了
+            </button>
+        </div>
+        
+        <div id="presentation-card-container">
+            <button class="pres-nav-btn pres-left" onclick="prevSlide()" title="戻る"><i class="bi bi-chevron-left"></i></button>
+            
+            <div id="presentation-card">
+                <img id="pres-image" style="display:none;">
+                <div id="pres-content"></div>
+            </div>
+
+            <button class="pres-nav-btn pres-right" onclick="nextSlide()" title="進む"><i class="bi bi-chevron-right"></i></button>
+        </div>
+
+        <div class="pres-footer">
+            <span id="pres-current" class="font-bold text-2xl">1</span>
+            <span class="opacity-50">/</span>
+            <span id="pres-total">1</span>
+        </div>
+    </div>
+
+    <!-- Image URL Modal -->
+    <div id="image-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">画像URLを入力</h3>
+            <input type="text" id="image-url-input" class="modal-input" placeholder="https://example.com/image.jpg">
+            <div class="modal-buttons">
+                <button id="image-delete-btn" class="btn btn-danger" style="display:none;" onclick="deleteImageFromCard()">削除</button>
+                <div style="flex-grow:1"></div>
+                <button class="btn btn-secondary" onclick="closeImageModal()">キャンセル</button>
+                <button class="btn btn-primary" onclick="addImageToCard()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link URL Modal -->
+    <div id="link-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">リンクURLを入力</h3>
+            <input type="text" id="link-url-input" class="modal-input" placeholder="https://example.com">
+            <div class="modal-buttons">
+                <button id="link-delete-btn" class="btn btn-danger" style="display:none;" onclick="deleteLinkFromCard()">削除</button>
+                <div style="flex-grow:1"></div>
+                <button class="btn btn-secondary" onclick="closeLinkModal()">キャンセル</button>
+                <button class="btn btn-primary" onclick="addLinkToCard()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Modal -->
+    <div id="search-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3 class="text-xl font-bold mb-4">カードを検索</h3>
+            <input type="text" id="search-input" class="modal-input" placeholder="キーワードを入力..." oninput="performSearch()">
+            <div id="search-results" class="mt-4 max-h-60 overflow-y-auto"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeSearchModal()">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar shadow-2xl">
+        <div class="flex items-center gap-2 px-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                <i class="bi bi-node-plus"></i>
+            </div>
+            <a href="index.html" class="font-bold tracking-tight text-lg">CardKnot</a>
+        </div>
+
+        <div class="h-6 w-px bg-gray-200" id="toolbar-divider"></div>
+
+        <button class="btn btn-success" onclick="startPresentation()" title="プレゼン開始">
+            <i class="bi bi-play-fill"></i><span>プレゼン</span>
+        </button>
+
+        <button class="btn btn-secondary" onclick="openSearchModal()" title="検索">
+            <i class="bi bi-search"></i><span>検索</span>
+        </button>
+
+        <button class="btn btn-secondary" onclick="autoLayout()" title="自動整列">
+            <i class="bi bi-diagram-3"></i><span>整列</span>
+        </button>
+        
+        <div class="h-6 w-px bg-gray-200"></div>
+        
+        <button class="btn btn-primary" onclick="addCard()">
+            <i class="bi bi-plus-lg"></i> <span>カード追加</span>
+        </button>
+
+        <div id="color-picker" class="flex gap-1.5 px-2 border-l border-r border-gray-100">
+            <div class="color-dot" data-color="#ffffff" style="background: #ffffff;" onclick="changeColor('#ffffff')"></div>
+            <div class="color-dot" data-color="#fef08a" style="background: #fef08a;" onclick="changeColor('#fef08a')"></div>
+            <div class="color-dot" data-color="#bbf7d0" style="background: #bbf7d0;" onclick="changeColor('#bbf7d0')"></div>
+            <div class="color-dot" data-color="#bfdbfe" style="background: #bfdbfe;" onclick="changeColor('#bfdbfe')"></div>
+            <div class="color-dot" data-color="#fecaca" style="background: #fecaca;" onclick="changeColor('#fecaca')"></div>
+        </div>
+
+        <button class="btn btn-danger" onclick="deleteSelected()" title="選択中を削除">
+            <i class="bi bi-trash3"></i>
+        </button>
+    </div>
+
+    <!-- Minimap -->
+    <div id="minimap-container">
+        <div id="minimap-content"></div>
+        <div id="minimap-viewport-indicator"></div>
+        <button id="minimap-toggle" onclick="toggleMinimap()" title="ミニマップを最小化">
+            <i class="bi bi-chevron-down"></i>
+        </button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
