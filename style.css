@@ -7,8 +7,8 @@
     --dot-color: #cbd5e1;
     --toolbar-bg: #ffffff;
     --toolbar-text: #1f2937;
-    --menu-bg: #ffffffc5;
-    --menu-hover: #f1f5f987;
+    --menu-bg: #fffffffa;
+    --menu-hover: #f1f5f9e3;
     --border-color: #e2e8f0;
     --input-bg: #ffffff;
     --input-border: #e2e8f0;
@@ -75,7 +75,7 @@ body {
 
 .card {
     position: absolute;
-    width: 220px;
+    min-width: 220px;
     min-height: 150px;
     background: var(--card-bg);
     color: var(--text-main);
@@ -132,15 +132,59 @@ body.dark-mode .card[style*="background-color"] {
 
 .card-image {
     width: 100%;
-    max-height: 120px;
+    height: auto;
+    max-height: 100%;
     object-fit: contain; /* or scale-down, coverより自然に */
     image-rendering: crisp-edges;
     image-rendering: pixelated;
     border-radius: 6px;
     margin-bottom: 6px;
+    margin-top: 6px;
     cursor: pointer;
     image-rendering: auto; /* 必須ではないが sharpen したい場合は次も試す */
     /* image-rendering: crisp-edges; */
+    flex-shrink: 1;
+}
+
+.card-type-image .card-image {
+    height: 100%;
+    width: 100%;
+    max-height: none;
+    margin: 0;
+}
+
+.card-video {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    margin-top: 6px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background: #000;
+}
+
+.card-video-iframe {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16/9;
+    max-height: 100%;
+    margin-top: 6px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    border: none;
+}
+
+.card-type-video {
+    justify-content: center;
+}
+
+.card-type-video .card-video,
+.card-type-video .card-video-iframe {
+    height: auto;
+    width: 100%;
+    max-height: 100%;
+    margin: auto;
+    object-fit: contain;
 }
 
 .card-link-preview {
@@ -227,7 +271,7 @@ body.dark-mode .card[style*="background-color"] {
     font-size: 12px;
     background: var(--menu-bg);
     color: var(--text-main);
-    border-radius: 50%;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -246,47 +290,33 @@ body.dark-mode .card[style*="background-color"] {
     background: var(--menu-hover);
 }
 
-.card-menu {
+.resize-handle {
     position: absolute;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    display: flex;
-    gap: 8px;
-    padding: 4px 6px;
-    background: var(--menu-bg);
-    border-radius: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    bottom: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    cursor: nwse-resize;
     z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s;
 }
 
-.card:hover .card-menu {
+.card:hover .resize-handle {
     opacity: 1;
-    pointer-events: auto;
-    transform: translateX(-50%) translateY(0);
 }
 
-.card-menu-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-    background: #f1f5f900;
-    color: var(--text-main);
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-
-.card-menu-btn:hover {
-    background: var(--menu-hover);
+/* 右下の斜線アイコン（CSSで描画） */
+.resize-handle::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--text-sub);
+    border-bottom: 2px solid var(--text-sub);
+    border-bottom-right-radius: 2px;
 }
 
 svg#connections-layer {
@@ -762,4 +792,76 @@ svg#connections-layer {
 .search-result-sub {
     font-size: 12px;
     color: var(--text-sub);
+}
+
+.content-placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 100px;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 20px;
+    justify-content: center;
+    align-items: center;
+    margin: auto;
+}
+
+.content-placeholder:hover {
+    background: var(--menu-hover);
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+
+.card-add-menu {
+    display: flex !important;
+    visibility: hidden;
+    opacity: 0;
+    margin-bottom: 12px;
+    min-width: 140px;
+    background: var(--menu-bg);
+    border: 1px solid var(--border-color);
+    transform: translateX(0%) translateY(10px);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    flex-direction: column;
+    z-index: 50;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.2s;
+    pointer-events: none;
+}
+
+.card-add-menu-container:hover .card-add-menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(0%) translateY(0);
+    pointer-events: auto;
+}
+
+.card-add-menu button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.card-add-menu button:hover {
+    background: var(--menu-hover);
+}
+
+.card-add-menu-container::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    height: 20px;
+    background: transparent;
 }

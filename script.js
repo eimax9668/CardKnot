@@ -17,6 +17,7 @@ let isDragging = false;
 let isPanning = false;
 let isDrawingLine = false;
 let isSelecting = false;
+let isResizing = false;
 let dragStart = { x: 0, y: 0 };
 let canvasStart = { x: 0, y: 0 };
 let lineStartCardId = null;
@@ -40,6 +41,16 @@ let contextMenu = null;
 let contextMenuPosition = { x: 0, y: 0 };
 let minimapState = { minX: 0, minY: 0, scale: 1 };
 let isMinimapDragging = false;
+let resizeStart = { x: 0, y: 0 };
+let resizeStartDims = { w: 0, h: 0 };
+let resizingCardId = null;
+
+function getYouTubeVideoId(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
 
 function updateTransform() {
     const tx = Math.round(translateX);
@@ -86,7 +97,12 @@ function screenToCanvas(x, y) {
     };
 }
 
-function addCard(x = null, y = null, text = "", imageUrl = "", linkUrl = "", id = null, color = null, collapsed = false, pinned = false, favorite = false) {
+function addNewCard(type) {
+    // ツールバーからの呼び出し用ヘルパー
+    addCard(null, null, "", "", "", "", null, null, false, false, false, type, null, null);
+}
+
+function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", linkUrl = "", id = null, color = null, collapsed = false, pinned = false, favorite = false, type = 'text', width = null, height = null) {
     if (x === null || y === null) {
         const center = screenToCanvas(window.innerWidth / 2, window.innerHeight / 2);
         x = center.x - 110;
@@ -97,6 +113,7 @@ function addCard(x = null, y = null, text = "", imageUrl = "", linkUrl = "", id 
     const cardEl = document.createElement('div');
     cardEl.className = 'card';
     cardEl.id = cardId;
+    cardEl.classList.add(`card-type-${type}`);
     cardEl.style.left = x + 'px';
     cardEl.style.top = y + 'px';
     if (color && color !== '#ffffff') {
@@ -106,18 +123,48 @@ function addCard(x = null, y = null, text = "", imageUrl = "", linkUrl = "", id 
     if (pinned) cardEl.classList.add('pinned');
     if (favorite) cardEl.classList.add('favorite');
 
+    let contentHtml = '';
+    
+    // 画像カード
+    if (type === 'image') {
+        if (imageUrl) {
+            contentHtml = `<img class="card-image" src="${imageUrl}" alt="Card image">`;
+        } else {
+            contentHtml = `<div class="content-placeholder" onclick="openImageModal('${cardId}')"><i class="bi bi-image text-2xl mb-1"></i><span class="text-xs">画像を設定</span></div>`;
+        }
+    } 
+    // 動画カード
+    else if (type === 'video') {
+        if (videoUrl) {
+            const ytId = getYouTubeVideoId(videoUrl);
+            contentHtml = ytId ? 
+                `<iframe class="card-video-iframe" src="https://www.youtube.com/embed/${ytId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` : 
+                `<video class="card-video" src="${videoUrl}" controls></video>`;
+        } else {
+            contentHtml = `<div class="content-placeholder" onclick="openVideoModal('${cardId}')"><i class="bi bi-camera-video text-2xl mb-1"></i><span class="text-xs">動画を設定</span></div>`;
+        }
+    }
+    // テキストカード（デフォルト）
+    else {
+        // 既存データ互換のため、もし画像や動画データがあれば表示はする（追加メニューはなし）
+        if (imageUrl) contentHtml += `<img class="card-image" src="${imageUrl}" alt="Card image">`;
+        if (videoUrl) {
+            const ytId = getYouTubeVideoId(videoUrl);
+            contentHtml += ytId ? 
+                `<iframe class="card-video-iframe" src="https://www.youtube.com/embed/${ytId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` : 
+                `<video class="card-video" src="${videoUrl}" controls></video>`;
+        }
+        contentHtml += `<textarea class="card-textarea" placeholder="思考を書き出す...">${text}</textarea>`;
+    }
+
     cardEl.innerHTML = `
         <div class="pin-icon"><i class="bi bi-pin-angle-fill"></i></div>
         <button class="collapse-btn" title="折りたたみ"><i class="bi bi-chevron-down"></i></button>
-        ${imageUrl ? `<img class="card-image" src="${imageUrl}" alt="Card image">` : ''}
+        ${contentHtml}
         ${linkUrl ? `<div class="card-link-preview"><i class="bi bi-link-45deg"></i><span class="card-link-text">${linkUrl}</span></div>` : ''}
-        <textarea class="card-textarea" placeholder="思考を書き出す...">${text}</textarea>
-        <div class="card-menu">
-            <button class="card-menu-btn" title="画像追加"><i class="bi bi-image"></i></button>
-            <button class="card-menu-btn" title="リンク追加"><i class="bi bi-link"></i></button>
-        </div>
         <div class="connector-point connector-left" data-side="left"></div>
         <div class="connector-point connector-right" data-side="right"></div>
+        <div class="resize-handle"></div>
     `;
 
     if (collapsed) {
@@ -133,6 +180,10 @@ function addCard(x = null, y = null, text = "", imageUrl = "", linkUrl = "", id 
             startDrawingLine(clientX, clientY, cardId, e.target.dataset.side);
             e.stopPropagation();
             if (e.cancelable) e.preventDefault();
+        } else if (e.target.classList.contains('resize-handle')) {
+            startResize(clientX, clientY, cardId);
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault();
         } else {
             if (e.shiftKey) {
                 if (selectedCards.has(cardEl)) removeFromSelection(cardEl);
@@ -141,7 +192,7 @@ function addCard(x = null, y = null, text = "", imageUrl = "", linkUrl = "", id 
                 if (!selectedCards.has(cardEl)) selectSingleCard(cardEl);
             }
 
-            if (e.target.tagName !== 'TEXTAREA' && !e.target.closest('.card-menu') && !e.target.closest('.collapse-btn') && !e.target.classList.contains('card-image') && !e.target.closest('.card-link-preview')) {
+            if (e.target.tagName !== 'TEXTAREA' && !e.target.closest('.collapse-btn') && !e.target.classList.contains('card-image') && !e.target.closest('.card-link-preview') && !e.target.closest('.content-placeholder')) {
                 if (selectedCards.has(cardEl)) {
                     startDrag(clientX, clientY);
                 }
@@ -185,16 +236,6 @@ function addCard(x = null, y = null, text = "", imageUrl = "", linkUrl = "", id 
         toggleCollapse(cardId);
     });
 
-    const menuBtns = cardEl.querySelectorAll('.card-menu-btn');
-    menuBtns[0].addEventListener('click', (e) => {
-        e.stopPropagation();
-        openImageModal(cardId);
-    });
-    menuBtns[1].addEventListener('click', (e) => {
-        e.stopPropagation();
-        openLinkModal(cardId);
-    });
-
     const cardImage = cardEl.querySelector('.card-image');
     if (cardImage) {
         cardImage.addEventListener('click', (e) => {
@@ -212,13 +253,15 @@ function addCard(x = null, y = null, text = "", imageUrl = "", linkUrl = "", id 
     }
 
     const textarea = cardEl.querySelector('.card-textarea');
-    textarea.addEventListener('input', () => {
-        saveData();
-    });
+    if (textarea) {
+        textarea.addEventListener('input', () => {
+            saveData();
+        });
+    }
 
     canvas.appendChild(cardEl);
-    cards.push({ id: cardId, el: cardEl, collapsed: collapsed, pinned: pinned, favorite: favorite, imageUrl, linkUrl, baseX: x, baseY: y });
-    updateCardStyles(cardEl, x, y); // ここで初回のみ描画（実体は下の関数で！）
+    cards.push({ id: cardId, el: cardEl, collapsed: collapsed, pinned: pinned, favorite: favorite, imageUrl, videoUrl, linkUrl, baseX: x, baseY: y, type: type, width: width, height: height });
+    updateCardStyles(cardEl, x, y, width, height); // ここで初回のみ描画（実体は下の関数で！）
     saveData();
     return cardId;
 }
@@ -281,6 +324,7 @@ function expandChildren(cardId, visited = new Set()) {
 let currentModalCardId = null;
 
 function openImageModal(cardId) {
+    hideContextMenu();
     currentModalCardId = cardId;
     const card = cards.find(c => c.id === cardId);
     document.getElementById('image-modal').style.display = 'flex';
@@ -310,16 +354,18 @@ function addImageToCard() {
     let existingImage = cardObj.el.querySelector('.card-image');
     if (existingImage) {
         existingImage.src = url;
-    } else {
-        const img = document.createElement('img');
-        img.className = 'card-image';
-        img.src = url;
-        img.addEventListener('click', (e) => {
-            e.stopPropagation();
-            window.open(url, '_blank');
-        });
-        const textarea = cardObj.el.querySelector('.card-textarea');
-        cardObj.el.insertBefore(img, textarea);
+    } 
+    // プレースホルダーがある場合は置換
+    else {
+        // カードを再描画するのが一番確実
+        cardObj.imageUrl = url;
+        const { x, y, text, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+        cardObj.el.remove();
+        cards = cards.filter(c => c.id !== id);
+        addCard(x, y, text, url, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height);
+        closeImageModal();
+        saveData();
+        return;
     }
 
     cardObj.imageUrl = url;
@@ -335,14 +381,81 @@ function deleteImageFromCard() {
     saveState();
     const existingImage = cardObj.el.querySelector('.card-image');
     if (existingImage) {
-        existingImage.remove();
+        // 画像カードの場合はプレースホルダーに戻すために再描画
+        cardObj.imageUrl = "";
+        const { x, y, text, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+        cardObj.el.remove();
+        cards = cards.filter(c => c.id !== id);
+        addCard(x, y, text, "", videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height);
     }
+    
     cardObj.imageUrl = "";
     closeImageModal();
     saveData();
 }
 
+function openVideoModal(cardId) {
+    hideContextMenu();
+    currentModalCardId = cardId;
+    const card = cards.find(c => c.id === cardId);
+    document.getElementById('video-modal').style.display = 'flex';
+    
+    const input = document.getElementById('video-url-input');
+    const deleteBtn = document.getElementById('video-delete-btn');
+    
+    input.value = card && card.videoUrl ? card.videoUrl : '';
+    deleteBtn.style.display = card && card.videoUrl ? 'flex' : 'none';
+    
+    input.focus();
+}
+
+function closeVideoModal() {
+    document.getElementById('video-modal').style.display = 'none';
+    currentModalCardId = null;
+}
+
+function addVideoToCard() {
+    const url = document.getElementById('video-url-input').value.trim();
+    if (!url || !currentModalCardId) return;
+
+    const cardObj = cards.find(c => c.id === currentModalCardId);
+    if (!cardObj) return;
+
+    saveState();
+    
+    // 動画カードの場合は再描画してプレースホルダーを動画に置き換える
+    cardObj.videoUrl = url;
+    const { x, y, text, imageUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+    cardObj.el.remove();
+    cards = cards.filter(c => c.id !== id);
+    addCard(x, y, text, imageUrl, url, linkUrl, id, color, collapsed, pinned, favorite, type, width, height);
+
+    cardObj.videoUrl = url;
+    closeVideoModal();
+    saveData();
+}
+
+function deleteVideoFromCard() {
+    if (!currentModalCardId) return;
+    const cardObj = cards.find(c => c.id === currentModalCardId);
+    if (!cardObj) return;
+
+    saveState();
+    
+    // 動画カードの場合はプレースホルダーに戻すために再描画
+    cardObj.videoUrl = "";
+    const { x, y, text, imageUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+    cardObj.el.remove();
+    cards = cards.filter(c => c.id !== id);
+    addCard(x, y, text, imageUrl, "", linkUrl, id, color, collapsed, pinned, favorite, type, width, height);
+
+    cardObj.videoUrl = "";
+    closeVideoModal();
+    saveData();
+}
+
 function openLinkModal(cardId) {
+    hideContextMenu();
     currentModalCardId = cardId;
     const card = cards.find(c => c.id === cardId);
     document.getElementById('link-modal').style.display = 'flex';
@@ -380,7 +493,8 @@ function addLinkToCard() {
             e.stopPropagation();
             window.open(url, '_blank');
         });
-        const textarea = cardObj.el.querySelector('.card-textarea');
+        // テキストエリアがあればその前、なければ末尾
+        const textarea = cardObj.el.querySelector('.card-textarea') || null;
         cardObj.el.insertBefore(linkDiv, textarea);
     }
 
@@ -471,6 +585,20 @@ function startDrawingLine(x, y, cardId, side) {
     tempLine.style.stroke = "#3b82f6";
     tempLine.style.opacity = "0.6";
     svgLayer.appendChild(tempLine);
+}
+
+function startResize(clientX, clientY, cardId) {
+    isResizing = true;
+    resizingCardId = cardId;
+    resizeStart = { x: clientX, y: clientY };
+    
+    const card = cards.find(c => c.id === cardId);
+    if (card) {
+        resizeStartDims = {
+            w: card.el.offsetWidth,
+            h: card.el.offsetHeight
+        };
+    }
 }
 
 function disconnectPoint(cardId, side) {
@@ -659,6 +787,23 @@ const handleMove = (e) => {
             tempLine.setAttribute('d', calculatePath(startCard.el, null, coords.x, coords.y, lineStartSide, toSide));
         }
     }
+    if (isResizing && resizingCardId) {
+        const card = cards.find(c => c.id === resizingCardId);
+        if (card) {
+            const dx = (clientX - resizeStart.x) / scale;
+            const dy = (clientY - resizeStart.y) / scale;
+            
+            const newWidth = Math.max(220, resizeStartDims.w + dx);
+            const newHeight = Math.max(150, resizeStartDims.h + dy);
+            
+            card.el.style.width = newWidth + 'px';
+            card.el.style.height = newHeight + 'px';
+            card.width = newWidth;
+            card.height = newHeight;
+            
+            updateConnections();
+        }
+    }
     if (isDragging && selectedCards.size > 0) {
         const startCoords = screenToCanvas(dragStart.x, dragStart.y);
         const dx = coords.x - startCoords.x;
@@ -725,6 +870,11 @@ const handleUp = (e) => {
         }
         dragStartState = null;
     }
+    if (isResizing) {
+        isResizing = false;
+        resizingCardId = null;
+        saveData();
+    }
     isDragging = false;
     isPanning = false;
     if (isSelecting) {
@@ -748,7 +898,7 @@ viewport.addEventListener('touchstart', (e) => {
 }, { passive: false });
 viewport.addEventListener('touchmove', (e) => {
     handleMove(e);
-    if (isPanning || isDragging || isDrawingLine || e.touches.length === 2) {
+    if (isPanning || isDragging || isDrawingLine || isResizing || e.touches.length === 2) {
         e.preventDefault();
     }
 }, { passive: false });
@@ -925,7 +1075,7 @@ function autoLayout() {
                     
                     card.baseX = x;
                     card.baseY = y;
-                    updateCardStyles(card.el, x, y);
+                    updateCardStyles(card.el, x, y, card.width, card.height);
                 }
             });
         });
@@ -965,10 +1115,12 @@ function startPresentation() {
         visited.add(cardId);
         const cardObj = cards.find(c => c.id === cardId);
         if (!cardObj) return;
+        const ta = cardObj.el.querySelector('textarea');
         presSequence.push({
-            text: cardObj.el.querySelector('textarea').value,
+            text: ta ? ta.value : '',
             color: cardObj.el.style.backgroundColor,
             imageUrl: cardObj.imageUrl || '',
+            videoUrl: cardObj.videoUrl || '',
             linkUrl: cardObj.linkUrl || ''
         });
         const nextConns = connections.filter(c => c.from === cardId);
@@ -988,6 +1140,8 @@ function updateSlide() {
     const slide = presSequence[currentSlideIndex];
     const display = document.getElementById('presentation-card');
     const presImage = document.getElementById('pres-image');
+    const presVideo = document.getElementById('pres-video');
+    const presVideoIframe = document.getElementById('pres-video-iframe');
     
     document.getElementById('pres-content').innerText = slide.text;
     display.style.backgroundColor = slide.color;
@@ -997,6 +1151,26 @@ function updateSlide() {
         presImage.style.display = 'block';
     } else {
         presImage.style.display = 'none';
+    }
+
+    if (slide.videoUrl) {
+        const ytId = getYouTubeVideoId(slide.videoUrl);
+        if (ytId) {
+            presVideo.style.display = 'none';
+            presVideo.pause();
+            presVideoIframe.src = `https://www.youtube.com/embed/${ytId}`;
+            presVideoIframe.style.display = 'block';
+        } else {
+            presVideoIframe.style.display = 'none';
+            presVideoIframe.src = '';
+            presVideo.src = slide.videoUrl;
+            presVideo.style.display = 'block';
+        }
+    } else {
+        presVideo.style.display = 'none';
+        presVideo.pause();
+        presVideoIframe.style.display = 'none';
+        presVideoIframe.src = '';
     }
     
     document.getElementById('pres-current').innerText = currentSlideIndex + 1;
@@ -1028,7 +1202,7 @@ window.addEventListener('keydown', (e) => {
     if (document.getElementById('presentation-overlay').style.display === 'flex') {
         if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
         if (e.key === 'ArrowLeft') prevSlide();
-        if (e.key === 'Escape') exitPresentation();
+        if (e.key === 'Escape') { exitPresentation(); return; }
         return;
     }
 
@@ -1040,6 +1214,13 @@ window.addEventListener('keydown', (e) => {
     }
 
     if (isInput) return;
+
+    // Select All: Ctrl+A
+    if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        cards.forEach(c => selectedCards.add(c.el));
+        updateSelectionVisuals();
+    }
 
     // Undo: Ctrl+Z
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -1115,10 +1296,12 @@ function rgbToHex(rgb) {
     return `#${r}${g}${b}`;
 }
 
-function updateCardStyles(cardEl, baseX, baseY) {
+function updateCardStyles(cardEl, baseX, baseY, width = null, height = null) {
     cardEl.style.left = baseX + 'px';
     cardEl.style.top = baseY + 'px';
-    cardEl.style.width = '220px';
+    if (width) cardEl.style.width = width + 'px';
+    else cardEl.style.width = '220px';
+    if (height) cardEl.style.height = height + 'px';
     cardEl.style.minHeight = '150px';
     cardEl.style.fontSize = '16px';
 }
@@ -1166,7 +1349,7 @@ function loadData() {
 
         if (data.cards) {
             data.cards.forEach(c => {
-                addCard(c.x, c.y, c.text, c.imageUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.linkTitle);
+                addCard(c.x, c.y, c.text, c.imageUrl, c.videoUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height);
             });
         }
 
@@ -1185,21 +1368,30 @@ function loadData() {
     return true;
 }
 
+function serializeCard(c) {
+    const ta = c.el.querySelector('.card-textarea');
+    return {
+        id: c.id,
+        x: parseFloat(c.el.style.left),
+        y: parseFloat(c.el.style.top),
+        text: ta ? ta.value : '',
+        color: c.el.style.backgroundColor,
+        imageUrl: c.imageUrl,
+        videoUrl: c.videoUrl,
+        linkUrl: c.linkUrl,
+        collapsed: c.collapsed,
+        linkTitle: c.linkTitle,
+        pinned: c.pinned,
+        favorite: c.favorite,
+        type: c.type || 'text',
+        width: c.width || parseFloat(c.el.style.width) || 220,
+        height: c.height || parseFloat(c.el.style.height) || null
+    };
+}
+
 function serializeState() {
     return {
-        cards: cards.map(c => ({
-            id: c.id,
-            x: parseFloat(c.el.style.left),
-            y: parseFloat(c.el.style.top),
-            text: c.el.querySelector('.card-textarea').value,
-            color: c.el.style.backgroundColor,
-            imageUrl: c.imageUrl,
-            linkUrl: c.linkUrl,
-            collapsed: c.collapsed,
-            linkTitle: c.linkTitle,
-            pinned: c.pinned,
-            favorite: c.favorite
-        })),
+        cards: cards.map(c => serializeCard(c)),
         connections: JSON.parse(JSON.stringify(connections))
     };
 }
@@ -1223,7 +1415,7 @@ function restoreState(state) {
 
     // Restore
     state.cards.forEach(c => {
-        addCard(c.x, c.y, c.text, c.imageUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.linkTitle);
+        addCard(c.x, c.y, c.text, c.imageUrl, c.videoUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height);
     });
     connections = state.connections;
     cards.forEach(c => { if (c.collapsed) collapseChildren(c.id); });
@@ -1250,13 +1442,14 @@ function copySelection() {
     const selectedIds = new Set();
     selectedCards.forEach(el => selectedIds.add(el.id));
     
-    const cardsToCopy = cards.filter(c => selectedIds.has(c.id)).map(c => ({
-        ...c,
-        text: c.el.querySelector('.card-textarea').value,
-        color: c.el.style.backgroundColor,
-        x: parseFloat(c.el.style.left),
-        y: parseFloat(c.el.style.top)
-    }));
+    const cardsToCopy = cards.filter(c => selectedIds.has(c.id)).map(c => {
+        const serialized = serializeCard(c);
+        return {
+            ...serialized,
+            // serializeCardで取得済みだが念のため明示
+            type: c.type || 'text'
+        };
+    });
     
     const connectionsToCopy = connections.filter(conn => 
         selectedIds.has(conn.from) && selectedIds.has(conn.to)
@@ -1289,7 +1482,7 @@ function pasteSelection(clientX = null, clientY = null) {
     clipboard.cards.forEach(c => {
         const newId = 'card-' + Math.random().toString(36).substr(2, 9);
         idMap.set(c.id, newId);
-        addCard(c.x + dx, c.y + dy, c.text, c.imageUrl, c.linkUrl, newId, c.color, c.collapsed, c.pinned, c.favorite, c.linkTitle);
+        addCard(c.x + dx, c.y + dy, c.text, c.imageUrl, c.videoUrl, c.linkUrl, newId, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height);
         addToSelection(document.getElementById(newId));
     });
 
@@ -1306,6 +1499,7 @@ function pasteSelection(clientX = null, clientY = null) {
 }
 
 function openSearchModal() {
+    hideContextMenu();
     document.getElementById('search-modal').style.display = 'flex';
     const input = document.getElementById('search-input');
     input.value = '';
@@ -1325,7 +1519,8 @@ function performSearch() {
     if (!query) return;
 
     const matches = cards.filter(c => {
-        const text = c.el.querySelector('.card-textarea').value.toLowerCase();
+        const ta = c.el.querySelector('.card-textarea');
+        const text = ta ? ta.value.toLowerCase() : '';
         const link = (c.linkUrl || '').toLowerCase();
         const title = (c.linkTitle || '').toLowerCase();
         return text.includes(query) || link.includes(query) || title.includes(query);
@@ -1340,7 +1535,8 @@ function performSearch() {
         const div = document.createElement('div');
         div.className = 'search-result-item';
         
-        const textVal = c.el.querySelector('.card-textarea').value;
+        const ta = c.el.querySelector('.card-textarea');
+        const textVal = ta ? ta.value : '';
         const displayText = textVal ? textVal.substring(0, 50) + (textVal.length > 50 ? '...' : '') : (c.linkTitle || c.linkUrl || '(テキストなし)');
         
         div.innerHTML = `

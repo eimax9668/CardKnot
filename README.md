@@ -34,6 +34,7 @@ CardKnotは、ブラウザ上で直感的にカードを作成・配置・接続
 | `Ctrl` + `Shift` + `Z` / `Ctrl` + `Y` | やり直し (Redo) |
 | `Ctrl` + `C` | コピー |
 | `Ctrl` + `V` | 貼り付け |
+| `Ctrl` + `A` | 全選択 |
 | `Shift` + `Click` | 複数選択 / 選択解除 |
 | `Shift` + `Drag` | 範囲選択 |
 
@@ -57,7 +58,7 @@ CardKnotは、ブラウザ上で直感的にカードを作成・配置・接続
     npm install
     ```
 
-3.  Tailwind CSSのビルド（開発中）
+3.  Tailwind CSSのビルド
     ```bash
     npx tailwindcss -i ./style.css -o ./dist/output.css --watch
     ```
