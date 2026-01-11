@@ -187,6 +187,56 @@ body.dark-mode .card[style*="background-color"] {
     object-fit: contain;
 }
 
+.card-link-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--menu-hover);
+    transition: background 0.2s;
+    margin-bottom: 3px;
+}
+
+.card-link-content:hover {
+    background: var(--border-color);
+}
+
+.card-link-image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-link-info {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.card-link-title {
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1.4;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card-link-url {
+    font-size: 11px;
+    color: var(--text-sub);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .card-link-preview {
     background: var(--menu-hover);
     border: 1px solid var(--border-color);

@@ -90,6 +90,28 @@
         </div>
     </div>
 
+    <!-- Link Card Modal -->
+    <div id="link-card-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">リンクカードを作成</h3>
+            <label class="text-sm text-gray-500">URL</label>
+            <div class="flex gap-2 items-center mb-3 mt-1">
+                <input type="text" id="link-card-url" class="modal-input flex-1" style="margin: 0;" placeholder="https://example.com">
+                <button id="link-card-fetch-btn" class="btn btn-secondary" style="white-space: nowrap;" onclick="autoFillLinkCardInfo()" title="タイトルと画像を自動取得">
+                    <i class="bi bi-magic"></i> 自動取得
+                </button>
+            </div>
+            <label class="text-sm text-gray-500">タイトル (任意)</label>
+            <input type="text" id="link-card-title" class="modal-input" placeholder="サイトのタイトル">
+            <label class="text-sm text-gray-500">画像URL (任意)</label>
+            <input type="text" id="link-card-image" class="modal-input" placeholder="https://example.com/ogp.jpg">
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeLinkCardModal()">キャンセル</button>
+                <button class="btn btn-primary" onclick="saveLinkCard()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Image URL Modal -->
     <div id="image-modal" class="modal">
         <div class="modal-content">
@@ -165,6 +187,9 @@
                 </button>
                 <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('video')">
                     <i class="bi bi-camera-video text-red-500"></i> 動画
+                </button>
+                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('link')">
+                    <i class="bi bi-link-45deg text-purple-500"></i> リンク
                 </button>
             </div>
             <button class="btn btn-primary" onclick="addNewCard('text')">
