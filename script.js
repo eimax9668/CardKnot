@@ -99,10 +99,10 @@ function screenToCanvas(x, y) {
 
 function addNewCard(type) {
     // ツールバーからの呼び出し用ヘルパー
-    addCard(null, null, "", "", "", "", null, null, false, false, false, type, null, null);
+    addCard(null, null, "", "", "", "", null, null, false, false, false, type, null, null, "");
 }
 
-function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", linkUrl = "", id = null, color = null, collapsed = false, pinned = false, favorite = false, type = 'text', width = null, height = null) {
+function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", linkUrl = "", id = null, color = null, collapsed = false, pinned = false, favorite = false, type = 'text', width = null, height = null, linkTitle = "") {
     if (x === null || y === null) {
         const center = screenToCanvas(window.innerWidth / 2, window.innerHeight / 2);
         x = center.x - 110;
@@ -142,6 +142,24 @@ function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", li
                 `<video class="card-video" src="${videoUrl}" controls></video>`;
         } else {
             contentHtml = `<div class="content-placeholder" onclick="openVideoModal('${cardId}')"><i class="bi bi-camera-video text-2xl mb-1"></i><span class="text-xs">動画を設定</span></div>`;
+        }
+    }
+    // リンクカード
+    else if (type === 'link') {
+        if (linkUrl) {
+            let domain = '';
+            try { domain = new URL(linkUrl).hostname; } catch(e) { domain = linkUrl; }
+            contentHtml = `
+                <div class="card-link-content" onclick="window.open('${linkUrl}', '_blank')">
+                    ${imageUrl ? `<img src="${imageUrl}" class="card-link-image">` : ''}
+                    <div class="card-link-info">
+                        <div class="card-link-title">${linkTitle || linkUrl}</div>
+                        <div class="card-link-url">${domain}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            contentHtml = `<div class="content-placeholder" onclick="openLinkCardModal('${cardId}')"><i class="bi bi-link-45deg text-2xl mb-1"></i><span class="text-xs">リンクを設定</span></div>`;
         }
     }
     // テキストカード（デフォルト）
@@ -260,7 +278,7 @@ function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", li
     }
 
     canvas.appendChild(cardEl);
-    cards.push({ id: cardId, el: cardEl, collapsed: collapsed, pinned: pinned, favorite: favorite, imageUrl, videoUrl, linkUrl, baseX: x, baseY: y, type: type, width: width, height: height });
+    cards.push({ id: cardId, el: cardEl, collapsed: collapsed, pinned: pinned, favorite: favorite, imageUrl, videoUrl, linkUrl, baseX: x, baseY: y, type: type, width: width, height: height, linkTitle: linkTitle });
     updateCardStyles(cardEl, x, y, width, height); // ここで初回のみ描画（実体は下の関数で！）
     saveData();
     return cardId;
@@ -359,10 +377,10 @@ function addImageToCard() {
     else {
         // カードを再描画するのが一番確実
         cardObj.imageUrl = url;
-        const { x, y, text, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+        const { x, y, text, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height, linkTitle } = serializeCard(cardObj);
         cardObj.el.remove();
         cards = cards.filter(c => c.id !== id);
-        addCard(x, y, text, url, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height);
+        addCard(x, y, text, url, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height, linkTitle);
         closeImageModal();
         saveData();
         return;
@@ -383,10 +401,10 @@ function deleteImageFromCard() {
     if (existingImage) {
         // 画像カードの場合はプレースホルダーに戻すために再描画
         cardObj.imageUrl = "";
-        const { x, y, text, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+        const { x, y, text, videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height, linkTitle } = serializeCard(cardObj);
         cardObj.el.remove();
         cards = cards.filter(c => c.id !== id);
-        addCard(x, y, text, "", videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height);
+        addCard(x, y, text, "", videoUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height, linkTitle);
     }
     
     cardObj.imageUrl = "";
@@ -425,10 +443,10 @@ function addVideoToCard() {
     
     // 動画カードの場合は再描画してプレースホルダーを動画に置き換える
     cardObj.videoUrl = url;
-    const { x, y, text, imageUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+    const { x, y, text, imageUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height, linkTitle } = serializeCard(cardObj);
     cardObj.el.remove();
     cards = cards.filter(c => c.id !== id);
-    addCard(x, y, text, imageUrl, url, linkUrl, id, color, collapsed, pinned, favorite, type, width, height);
+    addCard(x, y, text, imageUrl, url, linkUrl, id, color, collapsed, pinned, favorite, type, width, height, linkTitle);
 
     cardObj.videoUrl = url;
     closeVideoModal();
@@ -444,10 +462,10 @@ function deleteVideoFromCard() {
     
     // 動画カードの場合はプレースホルダーに戻すために再描画
     cardObj.videoUrl = "";
-    const { x, y, text, imageUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+    const { x, y, text, imageUrl, linkUrl, id, color, collapsed, pinned, favorite, type, width, height, linkTitle } = serializeCard(cardObj);
     cardObj.el.remove();
     cards = cards.filter(c => c.id !== id);
-    addCard(x, y, text, imageUrl, "", linkUrl, id, color, collapsed, pinned, favorite, type, width, height);
+    addCard(x, y, text, imageUrl, "", linkUrl, id, color, collapsed, pinned, favorite, type, width, height, linkTitle);
 
     cardObj.videoUrl = "";
     closeVideoModal();
@@ -516,6 +534,45 @@ function deleteLinkFromCard() {
     cardObj.linkUrl = "";
     closeLinkModal();
     saveData();
+}
+
+function openLinkCardModal(cardId) {
+    hideContextMenu();
+    currentModalCardId = cardId;
+    const card = cards.find(c => c.id === cardId);
+    document.getElementById('link-card-modal').style.display = 'flex';
+    
+    const urlInput = document.getElementById('link-card-url');
+    const titleInput = document.getElementById('link-card-title');
+    const imageInput = document.getElementById('link-card-image');
+    
+    urlInput.value = card && card.linkUrl ? card.linkUrl : '';
+    titleInput.value = card && card.linkTitle ? card.linkTitle : '';
+    imageInput.value = card && card.imageUrl ? card.imageUrl : '';
+    
+    urlInput.focus();
+}
+
+function closeLinkCardModal() {
+    document.getElementById('link-card-modal').style.display = 'none';
+    currentModalCardId = null;
+}
+
+function saveLinkCard() {
+    if (!currentModalCardId) return;
+    const cardObj = cards.find(c => c.id === currentModalCardId);
+    if (!cardObj) return;
+
+    const url = document.getElementById('link-card-url').value.trim();
+    const title = document.getElementById('link-card-title').value.trim();
+    const image = document.getElementById('link-card-image').value.trim();
+
+    const { x, y, text, videoUrl, id, color, collapsed, pinned, favorite, type, width, height } = serializeCard(cardObj);
+    cardObj.el.remove();
+    cards = cards.filter(c => c.id !== id);
+    addCard(x, y, text, image, videoUrl, url, id, color, collapsed, pinned, favorite, type, width, height, title);
+    
+    closeLinkCardModal();
 }
 
 function updateSelectionVisuals() {
@@ -1349,7 +1406,7 @@ function loadData() {
 
         if (data.cards) {
             data.cards.forEach(c => {
-                addCard(c.x, c.y, c.text, c.imageUrl, c.videoUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height);
+                addCard(c.x, c.y, c.text, c.imageUrl, c.videoUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height, c.linkTitle);
             });
         }
 
@@ -1380,7 +1437,7 @@ function serializeCard(c) {
         videoUrl: c.videoUrl,
         linkUrl: c.linkUrl,
         collapsed: c.collapsed,
-        linkTitle: c.linkTitle,
+        linkTitle: c.linkTitle || c.el.querySelector('.card-link-title')?.textContent || '',
         pinned: c.pinned,
         favorite: c.favorite,
         type: c.type || 'text',
@@ -1415,7 +1472,7 @@ function restoreState(state) {
 
     // Restore
     state.cards.forEach(c => {
-        addCard(c.x, c.y, c.text, c.imageUrl, c.videoUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height);
+        addCard(c.x, c.y, c.text, c.imageUrl, c.videoUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height, c.linkTitle);
     });
     connections = state.connections;
     cards.forEach(c => { if (c.collapsed) collapseChildren(c.id); });
@@ -1482,7 +1539,7 @@ function pasteSelection(clientX = null, clientY = null) {
     clipboard.cards.forEach(c => {
         const newId = 'card-' + Math.random().toString(36).substr(2, 9);
         idMap.set(c.id, newId);
-        addCard(c.x + dx, c.y + dy, c.text, c.imageUrl, c.videoUrl, c.linkUrl, newId, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height);
+        addCard(c.x + dx, c.y + dy, c.text, c.imageUrl, c.videoUrl, c.linkUrl, newId, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height, c.linkTitle);
         addToSelection(document.getElementById(newId));
     });
 
@@ -1848,6 +1905,71 @@ function toggleMinimap(forceMinimize = false) {
     }
     
     localStorage.setItem('cardKnotMinimapCollapsed', isMinimized);
+}
+
+async function fetchOGP(url) {
+    try {
+        // allorigins.win を使用してCORSを回避してHTMLを取得
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        const html = data.contents;
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        const getMetaContent = (property) => {
+            const element = doc.querySelector(`meta[property="${property}"]`) || doc.querySelector(`meta[name="${property}"]`);
+            return element ? element.getAttribute('content') : null;
+        };
+
+        const title = getMetaContent('og:title') || doc.title || '';
+        let image = getMetaContent('og:image') || '';
+        
+        // 相対パスの場合、絶対パスに変換
+        if (image && !image.startsWith('http') && !image.startsWith('//')) {
+            try {
+                image = new URL(image, url).href;
+            } catch (e) {
+                // URL解析失敗時はそのまま
+            }
+        }
+
+        return { title, image };
+    } catch (error) {
+        console.error('Failed to fetch OGP:', error);
+        return null;
+    }
+}
+
+async function autoFillLinkCardInfo() {
+    const urlInput = document.getElementById('link-card-url');
+    const titleInput = document.getElementById('link-card-title');
+    const imageInput = document.getElementById('link-card-image');
+    const fetchBtn = document.getElementById('link-card-fetch-btn');
+
+    const url = urlInput.value.trim();
+    if (!url) {
+        showToast("URLを入力してください");
+        return;
+    }
+
+    const originalBtnText = fetchBtn.innerHTML;
+    fetchBtn.disabled = true;
+    fetchBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+
+    const ogp = await fetchOGP(url);
+
+    if (ogp) {
+        if (ogp.title) titleInput.value = ogp.title;
+        if (ogp.image) imageInput.value = ogp.image;
+        showToast("情報を取得しました");
+    } else {
+        showToast("情報の取得に失敗しました");
+    }
+
+    fetchBtn.disabled = false;
+    fetchBtn.innerHTML = originalBtnText;
 }
 
 function showToast(message) {
