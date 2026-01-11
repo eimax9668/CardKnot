@@ -76,6 +76,20 @@
         </div>
     </div>
 
+    <!-- Video URL Modal -->
+    <div id="video-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">動画URLを入力</h3>
+            <input type="text" id="video-url-input" class="modal-input" placeholder="https://example.com/video.mp4">
+            <div class="modal-buttons">
+                <button id="video-delete-btn" class="btn btn-danger" style="display:none;" onclick="deleteVideoFromCard()">削除</button>
+                <div style="flex-grow:1"></div>
+                <button class="btn btn-secondary" onclick="closeVideoModal()">キャンセル</button>
+                <button class="btn btn-primary" onclick="addVideoToCard()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Image URL Modal -->
     <div id="image-modal" class="modal">
         <div class="modal-content">
@@ -141,9 +155,22 @@
         
         <div class="h-6 w-px bg-gray-200"></div>
         
-        <button class="btn btn-primary" onclick="addCard()">
-            <i class="bi bi-plus-lg"></i> <span>カード追加</span>
-        </button>
+        <div class="relative group card-add-menu-container">
+            <div class="card-add-menu">
+                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('text')">
+                    <i class="bi bi-card-text text-blue-500"></i> テキスト
+                </button>
+                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('image')">
+                    <i class="bi bi-image text-green-500"></i> 画像
+                </button>
+                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('video')">
+                    <i class="bi bi-camera-video text-red-500"></i> 動画
+                </button>
+            </div>
+            <button class="btn btn-primary" onclick="addNewCard('text')">
+                <i class="bi bi-plus-lg"></i> <span>カード追加</span>
+            </button>
+        </div>
 
         <div id="color-picker" class="flex gap-1.5 px-2 border-l border-r border-gray-100">
             <div class="color-dot" data-color="#ffffff" style="background: #ffffff;" onclick="changeColor('#ffffff')"></div>
