@@ -44,12 +44,34 @@ let isMinimapDragging = false;
 let resizeStart = { x: 0, y: 0 };
 let resizeStartDims = { w: 0, h: 0 };
 let resizingCardId = null;
+let isRemoteUpdate = false;
+const USER_COLORS = [
+    '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', 
+    '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', 
+    '#f43f5e', '#64748b'
+];
+let myCursorId = Math.random().toString(36).substr(2, 9);
+let myCursorColor = localStorage.getItem('cardKnotUserColor') || USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
+let myUserName = localStorage.getItem('cardKnotUserName') || ('User ' + myCursorId.substr(0, 4));
+let lastCursorUpdate = 0;
+let lastMousePos = { x: 0, y: 0 };
+let remoteCursors = new Map(); // 相手のカーソル管理用
 
 function getYouTubeVideoId(url) {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
+}
+
+function escapeHtml(text) {
+    if (!text) return text;
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 function updateTransform() {
@@ -88,6 +110,7 @@ function updateTransform() {
         
         redrawTimeout = null;
     }, 300);
+    renderRemoteCursors();
 }
 
 function screenToCanvas(x, y) {
@@ -128,7 +151,7 @@ function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", li
     // 画像カード
     if (type === 'image') {
         if (imageUrl) {
-            contentHtml = `<img class="card-image" src="${imageUrl}" alt="Card image">`;
+            contentHtml = `<img class="card-image" src="${escapeHtml(imageUrl)}" alt="Card image">`;
         } else {
             contentHtml = `<div class="content-placeholder" onclick="openImageModal('${cardId}')"><i class="bi bi-image text-2xl mb-1"></i><span class="text-xs">画像を設定</span></div>`;
         }
@@ -138,8 +161,8 @@ function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", li
         if (videoUrl) {
             const ytId = getYouTubeVideoId(videoUrl);
             contentHtml = ytId ? 
-                `<iframe class="card-video-iframe" src="https://www.youtube.com/embed/${ytId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` : 
-                `<video class="card-video" src="${videoUrl}" controls></video>`;
+                `<iframe class="card-video-iframe" src="https://www.youtube.com/embed/${escapeHtml(ytId)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` : 
+                `<video class="card-video" src="${escapeHtml(videoUrl)}" controls></video>`;
         } else {
             contentHtml = `<div class="content-placeholder" onclick="openVideoModal('${cardId}')"><i class="bi bi-camera-video text-2xl mb-1"></i><span class="text-xs">動画を設定</span></div>`;
         }
@@ -150,11 +173,11 @@ function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", li
             let domain = '';
             try { domain = new URL(linkUrl).hostname; } catch(e) { domain = linkUrl; }
             contentHtml = `
-                <div class="card-link-content" onclick="window.open('${linkUrl}', '_blank')">
-                    ${imageUrl ? `<img src="${imageUrl}" class="card-link-image">` : ''}
+                <div class="card-link-content" onclick="window.open('${escapeHtml(linkUrl)}', '_blank')">
+                    ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" class="card-link-image">` : ''}
                     <div class="card-link-info">
-                        <div class="card-link-title">${linkTitle || linkUrl}</div>
-                        <div class="card-link-url">${domain}</div>
+                        <div class="card-link-title">${escapeHtml(linkTitle || linkUrl)}</div>
+                        <div class="card-link-url">${escapeHtml(domain)}</div>
                     </div>
                 </div>
             `;
@@ -165,21 +188,21 @@ function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", li
     // テキストカード（デフォルト）
     else {
         // 既存データ互換のため、もし画像や動画データがあれば表示はする（追加メニューはなし）
-        if (imageUrl) contentHtml += `<img class="card-image" src="${imageUrl}" alt="Card image">`;
+        if (imageUrl) contentHtml += `<img class="card-image" src="${escapeHtml(imageUrl)}" alt="Card image">`;
         if (videoUrl) {
             const ytId = getYouTubeVideoId(videoUrl);
             contentHtml += ytId ? 
-                `<iframe class="card-video-iframe" src="https://www.youtube.com/embed/${ytId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` : 
-                `<video class="card-video" src="${videoUrl}" controls></video>`;
+                `<iframe class="card-video-iframe" src="https://www.youtube.com/embed/${escapeHtml(ytId)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` : 
+                `<video class="card-video" src="${escapeHtml(videoUrl)}" controls></video>`;
         }
-        contentHtml += `<textarea class="card-textarea" placeholder="思考を書き出す...">${text}</textarea>`;
+        contentHtml += `<textarea class="card-textarea" placeholder="思考を書き出す...">${escapeHtml(text)}</textarea>`;
     }
 
     cardEl.innerHTML = `
         <div class="pin-icon"><i class="bi bi-pin-angle-fill"></i></div>
         <button class="collapse-btn" title="折りたたみ"><i class="bi bi-chevron-down"></i></button>
         ${contentHtml}
-        ${linkUrl ? `<div class="card-link-preview"><i class="bi bi-link-45deg"></i><span class="card-link-text">${linkUrl}</span></div>` : ''}
+        ${linkUrl ? `<div class="card-link-preview"><i class="bi bi-link-45deg"></i><span class="card-link-text">${escapeHtml(linkUrl)}</span></div>` : ''}
         <div class="connector-point connector-left" data-side="left"></div>
         <div class="connector-point connector-right" data-side="right"></div>
         <div class="resize-handle"></div>
@@ -274,12 +297,17 @@ function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", li
     if (textarea) {
         textarea.addEventListener('input', () => {
             saveData();
+            const card = cards.find(c => c.id === cardId);
+            if (window.broadcastCard && card) window.broadcastCard(serializeCard(card));
         });
     }
 
     canvas.appendChild(cardEl);
     cards.push({ id: cardId, el: cardEl, collapsed: collapsed, pinned: pinned, favorite: favorite, imageUrl, videoUrl, linkUrl, baseX: x, baseY: y, type: type, width: width, height: height, linkTitle: linkTitle });
-    updateCardStyles(cardEl, x, y, width, height); // ここで初回のみ描画（実体は下の関数で！）
+    updateCardStyles(cardEl, x, y, width, height); 
+    if (window.broadcastCard && !isRemoteUpdate) {
+        window.broadcastCard(serializeCard(cards[cards.length - 1]));
+    }
     saveData();
     return cardId;
 }
@@ -303,6 +331,7 @@ function toggleCollapse(cardId) {
     }
     updateConnections();
     saveData();
+    if (window.broadcastCard) window.broadcastCard(serializeCard(cardObj));
 }
 
 function collapseChildren(cardId, visited = new Set()) {
@@ -502,11 +531,11 @@ function addLinkToCard() {
     saveState();
     let existingLink = cardObj.el.querySelector('.card-link-preview');
     if (existingLink) {
-        existingLink.querySelector('.card-link-text').textContent = url;
+        existingLink.querySelector('.card-link-text').innerText = url;
     } else {
         const linkDiv = document.createElement('div');
         linkDiv.className = 'card-link-preview';
-        linkDiv.innerHTML = `<i class="bi bi-link-45deg"></i><span class="card-link-text">${url}</span>`;
+        linkDiv.innerHTML = `<i class="bi bi-link-45deg"></i><span class="card-link-text">${escapeHtml(url)}</span>`;
         linkDiv.addEventListener('click', (e) => {
             e.stopPropagation();
             window.open(url, '_blank');
@@ -519,6 +548,7 @@ function addLinkToCard() {
     cardObj.linkUrl = url;
     closeLinkModal();
     saveData();
+    if (window.broadcastCard) window.broadcastCard(serializeCard(cardObj));
 }
 
 function deleteLinkFromCard() {
@@ -534,6 +564,7 @@ function deleteLinkFromCard() {
     cardObj.linkUrl = "";
     closeLinkModal();
     saveData();
+    if (window.broadcastCard) window.broadcastCard(serializeCard(cardObj));
 }
 
 function openLinkCardModal(cardId) {
@@ -590,22 +621,26 @@ function updateSelectionVisuals() {
 function addToSelection(el) {
     selectedCards.add(el);
     updateSelectionVisuals();
+    broadcastMyCursor();
 }
 
 function removeFromSelection(el) {
     selectedCards.delete(el);
     updateSelectionVisuals();
+    broadcastMyCursor();
 }
 
 function clearSelection() {
     selectedCards.clear();
     updateSelectionVisuals();
+    broadcastMyCursor();
 }
 
 function selectSingleCard(el) {
     selectedCards.clear();
     selectedCards.add(el);
     updateSelectionVisuals();
+    broadcastMyCursor();
 }
 
 function updateToolbarColors(hex) {
@@ -667,6 +702,7 @@ function disconnectPoint(cardId, side) {
     });
     updateConnections();
     saveData();
+    if (window.broadcastConnections) window.broadcastConnections(connections);
 }
 
 function updateConnections() {
@@ -808,6 +844,15 @@ const handleMove = (e) => {
         translateY = canvasStart.y + (clientY - dragStart.y);
         updateTransform();
     }
+    
+    lastMousePos = screenToCanvas(clientX, clientY);
+
+    const now = Date.now();
+    if (now - lastCursorUpdate > 100) {
+        broadcastMyCursor();
+        lastCursorUpdate = now;
+    }
+
     if (isSelecting && selectionBox) {
         const currentX = clientX;
         const currentY = clientY;
@@ -877,6 +922,9 @@ const handleMove = (e) => {
                 if (card) {
                     card.baseX = newX;
                     card.baseY = newY;
+                    if (window.broadcastCard) {
+                        window.broadcastCard({ id: el.id, x: newX, y: newY });
+                    }
                 }
             }
         });
@@ -902,6 +950,7 @@ const handleUp = (e) => {
                 toSide: toSide
             });
 
+            if (window.broadcastConnections) window.broadcastConnections(connections);
             const startCardObj = cards.find(c => c.id === lineStartCardId);
             if (startCardObj && (startCardObj.collapsed || startCardObj.el.style.display === 'none')) {
                 const targetCardObj = cards.find(c => c.id === targetCard.id);
@@ -929,6 +978,7 @@ const handleUp = (e) => {
     }
     if (isResizing) {
         isResizing = false;
+        if (window.broadcastCard) window.broadcastCard(serializeCard(cards.find(c => c.id === resizingCardId)));
         resizingCardId = null;
         saveData();
     }
@@ -976,6 +1026,7 @@ function changeColor(color) {
             if (color === '#ffffff') el.style.backgroundColor = '';
             else el.style.backgroundColor = color;
         });
+        selectedCards.forEach(el => { if(window.broadcastCard) window.broadcastCard(serializeCard(cards.find(c => c.id === el.id))); });
         updateToolbarColors(color);
         saveData();
     }
@@ -988,13 +1039,16 @@ function deleteSelected() {
         selectedCards.forEach(el => {
             idsToRemove.add(el.id);
             el.remove();
+            if (window.broadcastDelete) window.broadcastDelete(el.id);
         });
         connections = connections.filter(c => !idsToRemove.has(c.from) && !idsToRemove.has(c.to));
         cards = cards.filter(c => !idsToRemove.has(c.id));
         selectedCards.clear();
         updateConnections();
+        if (window.broadcastConnections) window.broadcastConnections(connections);
         updateToolbarColors(null);
         saveData();
+        broadcastMyCursor();
     }
 }
 
@@ -1314,33 +1368,183 @@ viewport.addEventListener('dblclick', (e) => {
     }
 });
 
-function applyGlobalStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        .card {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
+function handleShare() {
+    const btn = document.getElementById('share-btn');
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentRoom = urlParams.get('room');
+
+    if (currentRoom) {
+        // 既にルームにいる場合はリンクをコピー
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            showToast("リンクをコピーしました");
+        });
+    } else {
+        // ルーム作成
+        // セキュリティ向上のため、推測されにくいUUIDを使用する
+        const roomId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+            ? crypto.randomUUID() 
+            : Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+        const newUrl = window.location.pathname + '?room=' + roomId;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+        
+        if (window.connectToRoom) {
+            window.connectToRoom(roomId, myCursorId);
+            showToast("部屋を作成しました");
         }
+        
+        // ボタンの見た目を更新
+        updateShareButtonState(true);
+    }
+}
+window.handleShare = handleShare;
+
+function updateShareButtonState(hasRoom) {
+    const btn = document.getElementById('share-btn');
+    if (hasRoom) {
+        btn.innerHTML = '<i class="bi bi-link-45deg"></i><span>共有</span>';
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-success');
+    } else {
+        btn.innerHTML = '<i class="bi bi-share"></i><span>共有</span>';
+    }
+}
+
+function createUserNameModal() {
+    if (document.getElementById('username-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'username-modal';
+    modal.className = 'modal';
+    
+    let colorPaletteHtml = '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; justify-content:center;">';
+    USER_COLORS.forEach(color => {
+        colorPaletteHtml += `<div class="color-dot user-color-option" data-color="${color}" style="background-color:${color};"></div>`;
+    });
+    colorPaletteHtml += '</div>';
+
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3 style="margin-top:0; margin-bottom:16px; font-size:1.2rem; font-weight:bold;">ユーザー設定</h3>
+            <div style="margin-bottom:8px; font-size:0.9rem; color:var(--text-sub); font-weight:bold;">名前</div>
+            <input type="text" id="username-input" class="modal-input" placeholder="ユーザー名" maxlength="20" style="margin-top:0; margin-bottom:20px;">
+            <div style="margin-bottom:12px; font-size:0.9rem; color:var(--text-sub); font-weight:bold;">カーソル色</div>
+            ${colorPaletteHtml}
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="username-cancel-btn">キャンセル</button>
+                <button class="btn btn-primary" id="username-save-btn">保存</button>
+            </div>
+        </div>
     `;
-    document.head.appendChild(style);
+    document.body.appendChild(modal);
+
+    document.getElementById('username-cancel-btn').onclick = closeUserNameModal;
+    document.getElementById('username-save-btn').onclick = saveUserName;
+    
+    const input = document.getElementById('username-input');
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveUserName();
+        if (e.key === 'Escape') closeUserNameModal();
+    });
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeUserNameModal();
+    });
+
+    // 色選択のイベント
+    const colorOptions = modal.querySelectorAll('.user-color-option');
+    colorOptions.forEach(opt => {
+        opt.addEventListener('click', () => {
+            colorOptions.forEach(o => o.classList.remove('active-color'));
+            opt.classList.add('active-color');
+        });
+    });
+}
+
+function changeUserName() {
+    createUserNameModal();
+    const modal = document.getElementById('username-modal');
+    const input = document.getElementById('username-input');
+    input.value = myUserName;
+    
+    // 現在の色を選択状態にする
+    const colorOptions = modal.querySelectorAll('.user-color-option');
+    colorOptions.forEach(opt => {
+        if (opt.dataset.color === myCursorColor) {
+            opt.classList.add('active-color');
+        } else {
+            opt.classList.remove('active-color');
+        }
+    });
+
+    modal.style.display = 'flex';
+    input.focus();
+}
+
+function closeUserNameModal() {
+    const modal = document.getElementById('username-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function saveUserName() {
+    const input = document.getElementById('username-input');
+    const newName = input.value.trim();
+    
+    // 選択された色を取得
+    const activeColorBtn = document.querySelector('.user-color-option.active-color');
+    const newColor = activeColorBtn ? activeColorBtn.dataset.color : myCursorColor;
+    
+    if (newName && newName !== "") {
+        myUserName = newName;
+        myCursorColor = newColor;
+        localStorage.setItem('cardKnotUserName', myUserName);
+        localStorage.setItem('cardKnotUserColor', myCursorColor);
+        broadcastMyCursor();
+        showToast("ユーザー設定を保存しました");
+        closeUserNameModal();
+    } else {
+        showToast("ユーザー名を入力してください");
+    }
+}
+
+function initUserName() {
+    if (zoomPercentEl && zoomPercentEl.parentElement) {
+        const separator = document.createElement('div');
+        separator.className = 'zoom-separator';
+        zoomPercentEl.parentElement.appendChild(separator);
+
+        const btn = document.createElement('button');
+        btn.className = 'zoom-btn';
+        btn.innerHTML = '<i class="bi bi-person"></i>';
+        btn.title = "ユーザー名変更";
+        btn.onclick = changeUserName;
+        zoomPercentEl.parentElement.appendChild(btn);
+    }
 }
 
 window.onload = () => {
     if (!loadData()) {
         resetZoom();
-        addCard(4800, 4800, "CardKnotへようこそ！\n\n新機能:\n✓ 画像URL貼り付け\n✓ リンクプレビュー\n✓ カード折りたたみ\n\nカード下のボタンから追加できます！");
+        addCard(4800, 4800, "CardKnotへようこそ！");
     }
     setTimeout(updateTransform, 150);
-if (document.fonts) {
-    document.fonts.ready.then(() => setTimeout(updateTransform, 0));
-}
-canvas.style.left = "0px";
-canvas.style.top = "0px";
-applyGlobalStyles();
-initDarkMode();
-createContextMenu();
-initMinimap();
+    if (document.fonts) {
+        document.fonts.ready.then(() => setTimeout(updateTransform, 0));
+    }
+    canvas.style.left = "0px";
+    canvas.style.top = "0px";
+    initDarkMode();
+    createContextMenu();
+    initMinimap();
+    initUserName();
+
+    // URLパラメータからルームIDを取得して接続
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('room');
+    if (roomId) {
+        if (window.connectToRoom) window.connectToRoom(roomId, myCursorId);
+        updateShareButtonState(true);
+        showToast("部屋に参加しました");
+    }
 };
 
 function rgbToHex(rgb) {
@@ -1379,6 +1583,9 @@ function saveData(immediate = false) {
         };
         localStorage.setItem('cardKnotData', JSON.stringify(data));
         if (immediate) showToast("保存しました");
+
+        // Supabaseへの保存（ルームにいる場合）
+        if (window.saveRoomToDB) window.saveRoomToDB(data);
     };
 
     if (immediate) {
@@ -1386,6 +1593,13 @@ function saveData(immediate = false) {
     } else {
         saveTimeout = setTimeout(saveAction, 500);
     }
+}
+
+// リモートから初期データをロードする関数
+window.loadFromRemote = function(data) {
+    isRemoteUpdate = true;
+    restoreState(data);
+    isRemoteUpdate = false;
 }
 
 function loadData() {
@@ -1552,6 +1766,7 @@ function pasteSelection(clientX = null, clientY = null) {
         });
     });
     updateConnections();
+    if (window.broadcastConnections) window.broadcastConnections(connections);
     saveData();
 }
 
@@ -1597,7 +1812,7 @@ function performSearch() {
         const displayText = textVal ? textVal.substring(0, 50) + (textVal.length > 50 ? '...' : '') : (c.linkTitle || c.linkUrl || '(テキストなし)');
         
         div.innerHTML = `
-            <div class="search-result-text">${displayText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+            <div class="search-result-text">${escapeHtml(displayText)}</div>
             <div class="search-result-sub">ID: ${c.id}</div>
         `;
         
@@ -1667,12 +1882,40 @@ function showContextMenu(x, y, type = 'card') {
             <div class="context-menu-item" data-action="redo"><i class="bi bi-arrow-clockwise"></i> やり直し</div>
         `;
     }
+
+    // 共有中（ルームIDがある）ならリアクションメニューを追加
+    const isSharing = new URLSearchParams(window.location.search).has('room');
+    if (isSharing) {
+        menuHtml += `
+            <div class="h-px bg-gray-200 my-1"></div>
+            <div class="context-menu-reactions">
+                <div class="reaction-btn" data-emoji="👍">👍</div>
+                <div class="reaction-btn" data-emoji="❤️">❤️</div>
+                <div class="reaction-btn" data-emoji="😂">😂</div>
+                <div class="reaction-btn" data-emoji="🎉">🎉</div>
+                <div class="reaction-btn" data-emoji="😮">😮</div>
+            </div>
+        `;
+    }
+
     contextMenu.innerHTML = menuHtml;
 
     contextMenu.querySelectorAll('.context-menu-item').forEach(item => {
         item.addEventListener('click', (e) => {
             const action = e.currentTarget.dataset.action;
             handleContextMenuAction(action);
+            hideContextMenu();
+        });
+    });
+
+    contextMenu.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const emoji = e.currentTarget.dataset.emoji;
+            showReaction(contextMenuPosition.x, contextMenuPosition.y, emoji);
+            if (window.broadcastReaction) {
+                const coords = screenToCanvas(contextMenuPosition.x, contextMenuPosition.y);
+                window.broadcastReaction({ x: coords.x, y: coords.y, emoji });
+            }
             hideContextMenu();
         });
     });
@@ -1720,6 +1963,7 @@ function handleContextMenuAction(action) {
                     card.pinned = newState;
                     newState ? el.classList.add('pinned') : el.classList.remove('pinned');
                 }
+                if (window.broadcastCard) window.broadcastCard(serializeCard(card));
             });
             saveData();
         }
@@ -1741,6 +1985,7 @@ function handleContextMenuAction(action) {
                     card.favorite = newState;
                     newState ? el.classList.add('favorite') : el.classList.remove('favorite');
                 }
+                if (window.broadcastCard) window.broadcastCard(serializeCard(card));
             });
             saveData();
         }
@@ -1972,6 +2217,88 @@ async function autoFillLinkCardInfo() {
     fetchBtn.innerHTML = originalBtnText;
 }
 
+function exportData() {
+    const data = {
+        ...serializeState(),
+        view: { translateX, translateY, scale }
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    const date = new Date();
+    const timestamp = date.toISOString().slice(0, 10).replace(/-/g, '');
+    a.download = `cardknot_${timestamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("バックアップを保存しました");
+}
+
+function importData() {
+    document.getElementById('import-file').click();
+}
+
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            // データの検証（簡易）
+            if (!data.cards && !data.connections) {
+                throw new Error("Invalid data format");
+            }
+
+            // 既存データのクリア
+            cards.forEach(c => c.el.remove());
+            cards = [];
+            selectedCards.clear();
+            updateToolbarColors(null);
+            const lines = svgLayer.querySelectorAll('.connection-line');
+            lines.forEach(l => l.remove());
+            connections = [];
+
+            // データの復元
+            if (data.view) {
+                translateX = data.view.translateX;
+                translateY = data.view.translateY;
+                scale = data.view.scale;
+                updateTransform();
+                applyZoomUpdate();
+            }
+
+            if (data.cards) {
+                data.cards.forEach(c => {
+                    addCard(c.x, c.y, c.text, c.imageUrl, c.videoUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height, c.linkTitle);
+                });
+            }
+
+            if (data.connections) {
+                connections = data.connections;
+                cards.forEach(c => { if (c.collapsed) collapseChildren(c.id); });
+                updateConnections();
+            }
+            
+            saveData(); // localStorageにも保存
+            showToast("データを読み込みました");
+            
+        } catch (err) {
+            console.error(err);
+            showToast("ファイルの読み込みに失敗しました");
+        }
+        // inputをリセットして同じファイルを再度選べるようにする
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
 function showToast(message) {
     let toast = document.getElementById('toast-notification');
     if (!toast) {
@@ -1986,3 +2313,273 @@ function showToast(message) {
         toast.classList.remove('show');
     }, 2000);
 }
+
+function broadcastMyCursor() {
+    if (window.broadcastCursor) {
+        const selectedIds = Array.from(selectedCards).map(el => el.id);
+        window.broadcastCursor({
+            id: myCursorId,
+            userName: myUserName,
+            x: lastMousePos.x,
+            y: lastMousePos.y,
+            color: myCursorColor,
+            lastActive: Date.now(),
+            selectedIds: selectedIds
+        });
+    }
+}
+
+window.onRemoteCursorUpdate = function(data) {
+    remoteCursors.set(data.id, data);
+    renderRemoteCursors();
+};
+
+window.onRemoteCursorLeave = function(data) {
+    remoteCursors.delete(data.id);
+    renderRemoteCursors();
+};
+
+function renderRemoteCursors() {
+    const now = Date.now();
+    const activeSelections = new Set();
+    const idsToDelete = [];
+
+    remoteCursors.forEach((data, id) => {
+        if (id === myCursorId) return;
+        
+        // 10秒以上更新がないカーソルは削除（通信切断対策）
+        if (now - data.lastActive > 10000) {
+             idsToDelete.push(id);
+             return;
+        }
+
+        const displayName = data.userName || ('User ' + id.substr(0,4));
+        let cursorEl = document.getElementById('cursor-' + id);
+        if (!cursorEl) {
+            cursorEl = document.createElement('div');
+            cursorEl.id = 'cursor-' + id;
+            cursorEl.className = 'remote-cursor';
+            cursorEl.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" style="fill:${escapeHtml(data.color)}; stroke:white; stroke-width:1px; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+                    <path d="M0 0L10 20L14 12L22 10L0 0Z"/>
+                </svg>
+                <div class="cursor-label" style="background-color:${escapeHtml(data.color)}">${escapeHtml(displayName)}</div>
+            `;
+            viewport.appendChild(cursorEl);
+        } else {
+            const label = cursorEl.querySelector('.cursor-label');
+            if (label) {
+                label.innerText = displayName;
+                label.style.backgroundColor = data.color;
+            }
+            const svg = cursorEl.querySelector('svg');
+            if (svg) {
+                svg.style.fill = data.color;
+            }
+        }
+        
+        const screenX = data.x * scale + translateX;
+        const screenY = data.y * scale + translateY;
+        cursorEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
+
+        // 選択枠の描画
+        if (data.selectedIds && Array.isArray(data.selectedIds)) {
+            data.selectedIds.forEach(cardId => {
+                const card = cards.find(c => c.id === cardId);
+                if (card) {
+                    const frameId = `sel-${cardId}-${id}`;
+                    activeSelections.add(frameId);
+                    
+                    let frame = document.getElementById(frameId);
+                    if (!frame) {
+                        frame = document.createElement('div');
+                        frame.id = frameId;
+                        frame.className = 'remote-selection-frame';
+                        frame.style.borderColor = data.color;
+                        frame.innerHTML = `<div class="remote-selection-label" style="background-color:${escapeHtml(data.color)}">${escapeHtml(displayName)}</div>`;
+                        card.el.appendChild(frame);
+                    } else {
+                        // 既存フレームの更新（色が変更された場合など）
+                        frame.style.borderColor = data.color;
+                        const label = frame.querySelector('.remote-selection-label');
+                        if (label) {
+                            label.style.backgroundColor = data.color;
+                            label.innerText = displayName;
+                        }
+                        // 万が一DOMから外れていた場合は再追加
+                        if (frame.parentElement !== card.el) {
+                            card.el.appendChild(frame);
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    // タイムアウトしたユーザーを削除
+    idsToDelete.forEach(id => remoteCursors.delete(id));
+    
+    // 削除されたユーザーのカーソルを消去
+    const activeIds = new Set(remoteCursors.keys());
+    document.querySelectorAll('.remote-cursor').forEach(el => {
+        const id = el.id.replace('cursor-', '');
+        if (!activeIds.has(id)) {
+            el.remove();
+        }
+    });
+
+    // 非アクティブな選択枠を削除
+    document.querySelectorAll('.remote-selection-frame').forEach(el => {
+        if (!activeSelections.has(el.id)) {
+            el.remove();
+        }
+    });
+}
+
+window.addEventListener('beforeunload', () => {
+    if (window.broadcastLeave) window.broadcastLeave(myCursorId);
+});
+
+window.onRemoteCardUpdate = function(cardData) {
+    isRemoteUpdate = true;
+    const cardId = cardData.id;
+    let card = cards.find(c => c.id === cardId);
+
+    if (!card) {
+        // 新規作成
+        addCard(
+            cardData.x, cardData.y, cardData.text, 
+            cardData.imageUrl, cardData.videoUrl, cardData.linkUrl, 
+            cardId, cardData.color, cardData.collapsed, 
+            cardData.pinned, cardData.favorite, cardData.type, 
+            cardData.width, cardData.height, cardData.linkTitle
+        );
+    } else {
+        // 更新
+        const isBeingDragged = isDragging && Array.from(selectedCards).some(el => el.id === cardId);
+        if (!isBeingDragged) {
+            // 構造的な変更（画像、動画、リンク、タイプ）がある場合は再作成
+            const structuralChange = 
+                (cardData.type !== undefined && card.type !== cardData.type) ||
+                (cardData.imageUrl !== undefined && card.imageUrl !== cardData.imageUrl) ||
+                (cardData.videoUrl !== undefined && card.videoUrl !== cardData.videoUrl) ||
+                (cardData.linkUrl !== undefined && card.linkUrl !== cardData.linkUrl) ||
+                (cardData.linkTitle !== undefined && card.linkTitle !== cardData.linkTitle);
+
+            if (structuralChange) {
+                const newCardData = { ...serializeCard(card), ...cardData };
+                if (selectedCards.has(card.el)) selectedCards.delete(card.el);
+                card.el.remove();
+                cards = cards.filter(c => c.id !== cardId);
+                addCard(newCardData.x, newCardData.y, newCardData.text, newCardData.imageUrl, newCardData.videoUrl, newCardData.linkUrl, cardId, newCardData.color, newCardData.collapsed, newCardData.pinned, newCardData.favorite, newCardData.type, newCardData.width, newCardData.height, newCardData.linkTitle);
+                updateConnections();
+                return;
+            }
+
+            // 位置
+            if (cardData.x !== undefined && cardData.y !== undefined) {
+                card.el.style.left = cardData.x + 'px';
+                card.el.style.top = cardData.y + 'px';
+                card.baseX = cardData.x;
+                card.baseY = cardData.y;
+                updateConnections();
+            }
+            // テキスト
+            if (cardData.text !== undefined) {
+                const ta = card.el.querySelector('.card-textarea');
+                if (ta && ta.value !== cardData.text && document.activeElement !== ta) {
+                    ta.value = cardData.text;
+                }
+            }
+            // 色
+            if (cardData.color !== undefined) {
+                card.el.style.backgroundColor = cardData.color || '';
+            }
+            // サイズ
+            if (cardData.width !== undefined) {
+                card.width = cardData.width;
+                card.height = cardData.height;
+                card.el.style.width = cardData.width + 'px';
+                if (cardData.height) card.el.style.height = cardData.height + 'px';
+                updateConnections();
+            }
+            // 折りたたみ
+            if (cardData.collapsed !== undefined && card.collapsed !== cardData.collapsed) {
+                card.collapsed = cardData.collapsed;
+                const icon = card.el.querySelector('.collapse-btn i');
+                if (card.collapsed) {
+                    card.el.classList.add('collapsed');
+                    icon.className = 'bi bi-chevron-right';
+                    collapseChildren(cardId);
+                } else {
+                    card.el.classList.remove('collapsed');
+                    icon.className = 'bi bi-chevron-down';
+                    expandChildren(cardId);
+                }
+                updateConnections();
+            }
+            // ピン・お気に入り
+            if (cardData.pinned !== undefined) {
+                card.pinned = cardData.pinned;
+                card.pinned ? card.el.classList.add('pinned') : card.el.classList.remove('pinned');
+            }
+            if (cardData.favorite !== undefined) {
+                card.favorite = cardData.favorite;
+                card.favorite ? card.el.classList.add('favorite') : card.el.classList.remove('favorite');
+            }
+        }
+    }
+    isRemoteUpdate = false;
+};
+
+window.onRemoteReaction = function(data) {
+    // キャンバス座標をスクリーン座標に変換して表示
+    const screenX = data.x * scale + translateX;
+    const screenY = data.y * scale + translateY;
+    showReaction(screenX, screenY, data.emoji);
+};
+
+function showReaction(x, y, emoji) {
+    const el = document.createElement('div');
+    el.className = 'reaction-emoji';
+    el.textContent = emoji;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    document.body.appendChild(el);
+
+    // アニメーション終了後に削除
+    el.addEventListener('animationend', () => {
+        el.remove();
+    });
+    // 万が一のためのタイムアウト
+    setTimeout(() => {
+        if (el.parentNode) el.remove();
+    }, 2000);
+}
+
+window.updateUserCount = function(count) {
+    const el = document.getElementById('user-count');
+    const numEl = document.getElementById('user-count-num');
+    if (el && numEl) {
+        numEl.innerText = count;
+        el.classList.add('active');
+    }
+};
+window.onRemoteDeleteCard = function(data) {
+    isRemoteUpdate = true;
+    const card = cards.find(c => c.id === data.id);
+    if (card) {
+        if (selectedCards.has(card.el)) selectedCards.delete(card.el);
+        card.el.remove();
+        cards = cards.filter(c => c.id !== data.id);
+        updateConnections();
+    }
+    isRemoteUpdate = false;
+};
+
+window.onRemoteConnectionsUpdate = function(newConnections) {
+    isRemoteUpdate = true;
+    connections = newConnections;
+    updateConnections();
+    isRemoteUpdate = false;
+};

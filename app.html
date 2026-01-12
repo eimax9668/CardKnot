@@ -25,6 +25,14 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@100;200;300;400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link href="./dist/output.css" rel="stylesheet">
+    <script type="importmap">
+        {
+          "imports": {
+            "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7"
+          }
+        }
+        </script>
+        <script type="module" src="network.js"></script>
 </head>
 <body>
 
@@ -39,6 +47,10 @@
         <div class="zoom-btn" onclick="resetZoom()" title="リセット"><i class="bi bi-aspect-ratio"></i></div>
         <div class="h-px bg-gray-100 mx-1 my-1"></div>
         <div id="dark-mode-btn" class="zoom-btn" onclick="toggleDarkMode()" title="ダークモード切替"><i class="bi bi-moon"></i></div>
+        <div class="h-px bg-gray-100 mx-1 my-1"></div>
+        <div class="zoom-btn" onclick="exportData()" title="JSON保存"><i class="bi bi-download"></i></div>
+        <div class="zoom-btn" onclick="importData()" title="JSON読み込み"><i class="bi bi-upload"></i></div>
+        <input type="file" id="import-file" style="display: none" accept=".json" onchange="handleFileSelect(this)">
     </div>
 
     <div id="viewport">
@@ -175,6 +187,16 @@
             <i class="bi bi-diagram-3"></i><span>整列</span>
         </button>
         
+        <div class="share-wrapper">
+            <button id="share-btn" class="btn btn-secondary" onclick="handleShare()" title="共有">
+                <i class="bi bi-people"></i><span>共有</span>
+            </button>
+            
+            <div id="user-count" class="btn btn-secondary" title="接続人数">
+                <i class="bi bi-people-fill text-green-500"></i><span id="user-count-num">1</span>
+            </div>
+        </div>
+
         <div class="h-6 w-px bg-gray-200"></div>
         
         <div class="relative group card-add-menu-container">
@@ -218,7 +240,6 @@
             <i class="bi bi-chevron-down"></i>
         </button>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>

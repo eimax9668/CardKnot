@@ -89,6 +89,8 @@ body {
     border: 2px solid transparent;
     transition: box-shadow 0.2s, background-color 0.2s;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 /* ダークモード時、背景色が指定されているカード（パステルカラー等）の文字色は黒系にする */
@@ -577,6 +579,20 @@ svg#connections-layer {
     background-color: var(--border-color);
 }
 
+.zoom-separator {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 4px 2px;
+    flex-shrink: 0;
+}
+
+button.zoom-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: 18px;
+}
+
 .modal {
     display: none;
     position: fixed;
@@ -617,49 +633,6 @@ svg#connections-layer {
     margin-top: 16px;
 }
 
-@media (max-width: 950px) {
-    .toolbar div.flex.items-center.gap-2,
-    .toolbar div.bg-gray-200,
-    .toolbar span.font-bold {
-        display: none !important;
-    }
-    .toolbar {
-        bottom: 16px;
-        padding: 6px 10px;
-        gap: 8px;
-        width: auto;
-        max-width: 95vw;
-        justify-content: flex-start;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    .toolbar::-webkit-scrollbar { display: none; }
-    .btn { padding: 8px 26px; }
-    .btn span { display: none !important; }
-    #color-picker { gap: 4px; padding: 0 4px; border: none !important; }
-    .color-dot { width: 22px; height: 22px; }
-    .zoom-controls { top: 12px; right: 12px; padding: 4px; }
-    .zoom-btn { width: 34px; height: 34px; }
-
-    #presentation-card { 
-        font-size: 1.4rem; 
-        padding: 20px; 
-        width: 95%; 
-        aspect-ratio: auto;
-        height: 60vh;
-    }
-    .pres-nav-btn {
-        width: 60px;
-        height: 60px;
-        font-size: 1.8rem;
-        background: rgba(255, 255, 255, 0.2);
-    }
-    .pres-left { left: 10px; } 
-    .pres-right { right: 10px; }
-}
-
 .selection-box {
     position: fixed;
     background: rgba(59, 130, 246, 0.1);
@@ -697,6 +670,33 @@ svg#connections-layer {
     background: var(--menu-hover);
 }
 
+.context-menu-reactions {
+    display: flex;
+    justify-content: space-around;
+    padding: 4px;
+}
+
+.reaction-btn {
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.2s, transform 0.1s;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.reaction-btn:hover {
+    background: var(--menu-hover);
+    transform: scale(1.2);
+}
+
+.context-menu .bg-gray-200 {
+    background-color: var(--border-color);
+}
+.context-menu .h-px {
+    height: 1px;
+}
+
 .context-menu-item i {
     font-size: 16px;
     color: #64748b;
@@ -706,14 +706,14 @@ svg#connections-layer {
 
 #minimap-container {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    right: 80px;
+    top: 22px;
     width: 240px;
     height: 160px;
     background: var(--menu-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     z-index: 900;
     overflow: hidden;
     opacity: 0.9;
@@ -917,4 +917,141 @@ svg#connections-layer {
     width: 160px;
     height: 20px;
     background: transparent;
+}
+
+.remote-cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 2000;
+    transition: transform 0.1s linear;
+    will-change: transform;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.cursor-label {
+    margin-top: 4px;
+    margin-left: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.remote-selection-frame {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2.5px solid;
+    border-radius: 8px;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.remote-selection-label {
+    color: white;
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 4px 4px 0 4px;
+    margin-top: -2px;
+}
+
+.share-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#user-count {
+    display: flex;
+    opacity: 0;
+    color:var(--text-main);
+    pointer-events: none;
+    cursor: default;
+    padding-left: 24px;
+    padding-right: 24px;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    margin-bottom: 12px;
+    background: var(--menu-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10;
+    transition: 
+        opacity 0.2s,
+        transform 0.2s;
+}
+
+#user-count.active {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0px);
+}
+
+.reaction-emoji {
+    position: fixed;
+    font-size: 2.5rem;
+    pointer-events: none;
+    z-index: 10001;
+    transform: translate(-50%, -50%);
+    animation: reactionAnim 1.5s forwards cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes reactionAnim {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -80%) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -200%) scale(1); }
+}
+
+@media (max-width: 1100px) {
+    .toolbar div.flex.items-center.gap-2,
+    .toolbar div.bg-gray-200,
+    .toolbar span.font-bold {
+        display: none !important;
+    }
+    .toolbar {
+        bottom: 16px;
+        padding: 6px 10px;
+        gap: 8px;
+        width: auto;
+        max-width: 95vw;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .toolbar::-webkit-scrollbar { display: none; }
+    .btn { padding: 8px 26px; }
+    .btn span { display: none !important; }
+    #color-picker { gap: 4px; padding: 0 4px; border: none !important; }
+    .color-dot { width: 22px; height: 22px; }
+    .zoom-controls { top: 12px; right: 12px; padding: 4px; }
+    .zoom-btn { width: 34px; height: 34px; }
+    #minimap-container {top: 12px; right: 64px; }
+    #presentation-card { 
+        font-size: 1.4rem; 
+        padding: 20px; 
+        width: 95%; 
+        aspect-ratio: auto;
+        height: 60vh;
+    }
+    .pres-nav-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 1.8rem;
+        background: rgba(255, 255, 255, 0.2);
+    }
+    .pres-left { left: 10px; } 
+    .pres-right { right: 10px; }
 }
