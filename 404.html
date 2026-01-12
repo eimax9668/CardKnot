@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head prefix="og:http://ogp.me/ns#">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Not Found - CardKnot</title>
+    <meta name="robots" content="noindex">
+    <meta property="og:title" content="404 Not Found - CardKnot">
+    <meta property="og:image" content="https://cardknot.f5.si/images/image.png">
+    <meta property="og:url" content="https://cardknot.f5.si/404.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="CardKnot">
+    <meta property="og:locale" content="ja_JP">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="404 Not Found - CardKnot">
+    <meta name="twitter:image" content="https://cardknot.f5.si/images/image.png">
+    <link rel="icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@100;200;300;400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="./dist/output.css" rel="stylesheet">
+    <style>
+        .floating-icon {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans flex flex-col min-h-screen overflow-hidden">
+
+    <!-- ナビゲーション -->
+    <nav class="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                    <i class="bi bi-node-plus"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tight">CardKnot</span><span class="text-[10px] text-gray-300 font-mono ml-2 select-none">v1.3.1</span>
+            </a>
+            <div class="hidden md:flex items-center gap-6">
+                <div class="flex items-center gap-6 text-sm font-medium text-slate-600 mr-2">
+                    <a href="index.html" class="hover:text-blue-600 transition-colors">ホーム</a>
+                    <a href="help.html" class="hover:text-blue-600 transition-colors">使い方</a>
+                    <a href="privacy.html" class="hover:text-blue-600 transition-colors">プライバシー</a>
+                </div>
+                <a href="app.html" class="px-4 py-2 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors">
+                    アプリを開く
+                </a>
+            </div>
+            <button id="mobile-menu-btn" class="md:hidden text-slate-600 text-2xl p-2 focus:outline-none">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="md:hidden bg-white border-t border-slate-200 absolute w-full left-0 top-16 shadow-lg">
+            <div class="flex flex-col p-4 space-y-4 text-sm font-medium text-slate-600">
+                <a href="index.html" class="block py-2 hover:text-blue-600">ホーム</a>
+                <a href="help.html" class="block py-2 hover:text-blue-600">使い方</a>
+                <a href="privacy.html" class="block py-2 hover:text-blue-600">プライバシー</a>
+                <a href="app.html" class="block py-3 text-center rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700">
+                    アプリを開く
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- コンテンツ -->
+    <main class="flex-grow flex items-center justify-center pt-16 px-4 relative">
+        <!-- 背景装飾 -->
+        <div class="absolute inset-0 -z-10 overflow-hidden">
+            <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
+            <div class="absolute top-1/3 right-1/4 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000"></div>
+            <div class="absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-4000"></div>
+        </div>
+
+        <div class="text-center max-w-lg relative z-10">
+            <div class="relative inline-block mb-6">
+                <!-- 背景の大きな数字 -->
+                <div class="text-[10rem] font-bold text-slate-200 leading-none select-none">404</div>
+                
+                <!-- 中央に浮遊するアイコン -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 floating-icon">
+                    <div class="w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center border border-slate-100">
+                        <i class="bi bi-diagram-3 text-5xl text-blue-500"></i>
+                    </div>
+                    <!-- 繋がっていない線のような装飾 -->
+                    <div class="absolute -right-8 top-1/2 w-8 h-1 bg-slate-300 rounded-full"></div>
+                    <div class="absolute -left-8 top-1/2 w-8 h-1 bg-slate-300 rounded-full"></div>
+                </div>
+            </div>
+            
+            <h1 class="text-2xl font-bold mb-4 text-slate-900">ページが見つかりません</h1>
+            <p class="text-slate-600 mb-10 leading-relaxed">
+                お探しのページは移動または削除された可能性があります。<br>
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="index.html" class="px-8 py-3 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                    トップへ戻る
+                </a>
+                <a href="app.html" class="px-8 py-3 rounded-full bg-white text-slate-700 font-bold border border-slate-200 hover:bg-slate-50 transition-all hover:shadow-md">
+                    アプリを開く
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-12">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-slate-700 rounded flex items-center justify-center text-white text-xs">
+                    <i class="bi bi-node-plus"></i>
+                </div>
+                <span class="font-bold text-white">CardKnot</span>
+            </div>
+            <div class="text-sm">
+                &copy; 2026 | v1.3.1 |
+                <a href="https://github.com/eimax9668/CardKnot">GitHub</a>
+            </div>
+        </div>
+    </footer>
+    <script>
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        if (menuBtn && mobileMenu) {
+            menuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('open');
+                menuBtn.querySelector('i').classList.toggle('bi-list');
+                menuBtn.querySelector('i').classList.toggle('bi-x-lg');
+            });
+        }
+    </script>
+</body>
+</html>

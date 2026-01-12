@@ -27,9 +27,6 @@
     <!-- スタイルシート -->
     <link href="./dist/output.css" rel="stylesheet">
     <style>
-        body {
-            font-family: "Inter", "IBM Plex Sans JP", sans-serif;
-        }
         .gradient-text {
             background: linear-gradient(to right, #2563eb, #3b82f6);
             background-clip: text;
@@ -47,21 +44,48 @@
             opacity: 1;
             transform: translateY(0);
         }
+        /* カルーセル用スクロールバー非表示 */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-50 text-slate-800 font-sans">
 
     <!-- ナビゲーション -->
-    <nav class="fixed w-full bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
+    <nav class="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
                     <i class="bi bi-node-plus"></i>
                 </div>
-                <span class="font-bold text-xl tracking-tight">CardKnot</span><span class="text-[10px] text-gray-300 font-mono ml-2 select-none">v1.2.1</span>
+                <span class="font-bold text-xl tracking-tight">CardKnot</span><span class="text-[10px] text-gray-300 font-mono ml-2 select-none">v1.3.1</span>
             </div>
-            <div class="flex gap-4">
+            <div class="hidden md:flex items-center gap-6">
+                <div class="flex items-center gap-6 text-sm font-medium text-slate-600 mr-2">
+                    <a href="index.html" class="hover:text-blue-600 transition-colors">ホーム</a>
+                    <a href="help.html" class="hover:text-blue-600 transition-colors">使い方</a>
+                    <a href="privacy.html" class="hover:text-blue-600 transition-colors">プライバシー</a>
+                </div>
                 <a href="app.html" class="px-4 py-2 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors">
+                    アプリを開く
+                </a>
+            </div>
+            <button id="mobile-menu-btn" class="md:hidden text-slate-600 text-2xl p-2 focus:outline-none">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="md:hidden bg-white border-t border-slate-200 absolute w-full left-0 top-16 shadow-lg">
+            <div class="flex flex-col p-4 space-y-4 text-sm font-medium text-slate-600">
+                <a href="index.html" class="block py-2 hover:text-blue-600">ホーム</a>
+                <a href="help.html" class="block py-2 hover:text-blue-600">使い方</a>
+                <a href="privacy.html" class="block py-2 hover:text-blue-600">プライバシー</a>
+                <a href="app.html" class="block py-3 text-center rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700">
                     アプリを開く
                 </a>
             </div>
@@ -98,38 +122,63 @@
                 <h2 class="text-3xl font-bold mb-4">CardKnotができること</h2>
                 <p class="text-slate-600">シンプルだけど、パワフルな機能。</p>
             </div>
-
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- Feature 1 -->
-                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="0">
+            <div class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-6 pb-8 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="0">
                     <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-diagram-3"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3">直感的な接続</h3>
-                    <p class="text-slate-600 leading-relaxed">
+                    <p class="text-slate-600 leading-relaxed mb-4">
                         カードとカードを線で結ぶだけで、関係性を可視化。複雑なアイデアもスッキリ整理できます。
                     </p>
                 </div>
-
-                <!-- Feature 2 -->
-                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="100">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="100">
                     <div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-play-btn"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3">プレゼンテーション</h3>
-                    <p class="text-slate-600 leading-relaxed">
+                    <p class="text-slate-600 leading-relaxed mb-4">
                         作ったマップをそのままスライドショーに。思考のプロセスをスムーズに共有できます。
                     </p>
                 </div>
-
-                <!-- Feature 3 -->
-                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
                     <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-hdd"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3">ローカル保存</h3>
-                    <p class="text-slate-600 leading-relaxed">
+                    <p class="text-slate-600 leading-relaxed mb-4">
                         データはブラウザに自動保存。サーバーに送信されないので、プライバシーも安心です。
+                    </p>
+                </div>
+
+
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
+                    <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center text-2xl mb-6">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">共同作業</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4">
+                    複数人で同時編集。リアルタイムでアイデアを組み立て、変化を一緒に体験できます。
+                    </p>
+                </div>
+
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-2xl mb-6">
+                        <i class="bi bi-card-image"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">リッチな情報整理</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4">
+                    画像やリンク、動画などもカード内に自由に貼り付け、アイディアや資料をひとまとめに整理できます。
+                    </p>
+                </div>
+
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
+                    <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center text-2xl mb-6">
+                        <i class="bi bi-download"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">JSONバックアップ</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4">
+                    JSONファイルとして簡単に保存・読み込みでき、大切なデータのバックアップや移行が手軽です。
                     </p>
                 </div>
             </div>
@@ -216,7 +265,7 @@
                 <span class="font-bold text-white">CardKnot</span>
             </div>
             <div class="text-sm">
-                &copy; 2026 | v1.2.1 |
+                &copy; 2026 | v1.3.1 |
                 <a href="https://github.com/eimax9668/CardKnot">GitHub</a>
             </div>
         </div>
@@ -241,6 +290,18 @@
                 if (el.dataset.delay) el.style.transitionDelay = el.dataset.delay + 'ms';
                 observer.observe(el);
             });
+
+            // Mobile Menu Toggle
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (menuBtn && mobileMenu) {
+                menuBtn.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('open');
+                    menuBtn.querySelector('i').classList.toggle('bi-list');
+                    menuBtn.querySelector('i').classList.toggle('bi-x-lg');
+                });
+            }
         });
     </script>
 </body>
