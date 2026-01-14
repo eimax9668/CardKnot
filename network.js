@@ -1,7 +1,4 @@
-// network.js
 import { createClient } from '@supabase/supabase-js';
-
-// Supabaseのプロジェクト設定 (ご自身のものに書き換えてください)
 const SUPABASE_URL = 'https://cblrceabckkxbpfulnec.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_cj9UcQEvvJppBB11UxgNxQ_wcY4nqJK';
 
@@ -12,10 +9,8 @@ let currentRoomId = null;
 let lastSaveTime = 0;
 
 // 部屋に接続
-window.connectToRoom = async (roomId, userId) => {
+window.connectToRoom = async (roomId, userId, userName) => {
     currentRoomId = roomId;
-    console.log(`接続します: ${roomId}`);
-
     // 1. DBから初期データをロード
     const { data, error } = await supabase.rpc('get_room', { room_id: roomId });
 
@@ -50,10 +45,16 @@ window.connectToRoom = async (roomId, userId) => {
             if (window.onRemoteReaction) window.onRemoteReaction(payload);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-            if (key !== userId && window.showToast) window.showToast("誰かが入室しました");
+            if (key !== userId && window.showToast) {
+                const name = newPresences[0]?.user_name || '誰か';
+                window.showToast(`${name}が入室しました`);
+            }
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-            if (key !== userId && window.showToast) window.showToast("誰かが退出しました");
+            if (key !== userId && window.showToast) {
+                const name = leftPresences[0]?.user_name || '誰か';
+                window.showToast(`${name}が退出しました`);
+            }
         })
         .on('presence', { event: 'sync' }, () => {
             const newState = currentChannel.presenceState();
@@ -63,7 +64,7 @@ window.connectToRoom = async (roomId, userId) => {
         .subscribe(async (status, err) => {
             if (status === 'SUBSCRIBED') {
                 console.log('接続完了');
-                await currentChannel.track({ online_at: new Date().toISOString() });
+                await currentChannel.track({ user_name: userName, online_at: new Date().toISOString() });
             } else if (status === 'CHANNEL_ERROR') {
                 console.error('Realtime接続エラー:', err);
                 if (window.showToast) window.showToast("接続エラーが発生しました");
@@ -81,6 +82,12 @@ window.saveRoomToDB = async (state) => {
     lastSaveTime = now;
 
     await supabase.rpc('save_room', { room_id: currentRoomId, room_content: state });
+};
+
+window.updateUserNameInPresence = (userName) => {
+    if (currentChannel) {
+        currentChannel.track({ user_name: userName });
+    }
 };
 
 // 各種ブロードキャスト関数
