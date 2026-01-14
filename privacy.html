@@ -50,7 +50,7 @@
             </button>
         </div>
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="md:hidden bg-white border-t border-slate-200 absolute w-full left-0 top-16 shadow-lg">
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-slate-200 absolute w-full left-0 top-16 shadow-lg transition-all duration-300 ease-in-out opacity-0 -translate-y-2">
             <div class="flex flex-col p-4 space-y-4 text-sm font-medium text-slate-600">
                 <a href="index.html" class="block py-2 hover:text-blue-600">ホーム</a>
                 <a href="help.html" class="block py-2 hover:text-blue-600">使い方</a>
@@ -125,9 +125,19 @@
         
         if (menuBtn && mobileMenu) {
             menuBtn.addEventListener('click', () => {
-                mobileMenu.classList.toggle('open');
-                menuBtn.querySelector('i').classList.toggle('bi-list');
-                menuBtn.querySelector('i').classList.toggle('bi-x-lg');
+                const isExpanded = menuBtn.querySelector('i').classList.contains('bi-x-lg');
+                if (isExpanded) {
+                    mobileMenu.classList.add('opacity-0', '-translate-y-2');
+                    menuBtn.querySelector('i').classList.remove('bi-x-lg');
+                    menuBtn.querySelector('i').classList.add('bi-list');
+                    setTimeout(() => { mobileMenu.classList.add('hidden'); }, 300);
+                } else {
+                    mobileMenu.classList.remove('hidden');
+                    void mobileMenu.offsetWidth;
+                    mobileMenu.classList.remove('opacity-0', '-translate-y-2');
+                    menuBtn.querySelector('i').classList.remove('bi-list');
+                    menuBtn.querySelector('i').classList.add('bi-x-lg');
+                }
             });
         }
     </script>
