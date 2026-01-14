@@ -974,22 +974,20 @@ button.zoom-btn {
 #user-count {
     display: flex;
     opacity: 0;
-    color:var(--text-main);
+    color: var(--text-main);
     pointer-events: none;
     cursor: default;
-    padding-left: 24px;
-    padding-right: 24px;
     position: absolute;
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%) translateY(5px);
     margin-bottom: 12px;
     background: var(--menu-bg);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 10;
-    transition: 
-        opacity 0.2s,
-        transform 0.2s;
+    transition: opacity 0.2s, transform 0.2s;
+    width: 79px;
+    justify-content: center;
 }
 
 #user-count.active {

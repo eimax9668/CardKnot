@@ -1499,6 +1499,9 @@ function saveUserName() {
         localStorage.setItem('cardKnotUserName', myUserName);
         localStorage.setItem('cardKnotUserColor', myCursorColor);
         broadcastMyCursor();
+        if (window.updateUserNameInPresence) {
+            window.updateUserNameInPresence(myUserName);
+        }
         showToast("ユーザー設定を保存しました");
         closeUserNameModal();
     } else {
@@ -1541,7 +1544,7 @@ window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
     if (roomId) {
-        if (window.connectToRoom) window.connectToRoom(roomId, myCursorId);
+        if (window.connectToRoom) window.connectToRoom(roomId, myCursorId, myUserName);
         updateShareButtonState(true);
         showToast("部屋に参加しました");
     }
