@@ -35,6 +35,12 @@ window.connectToRoom = async (roomId, userId, userName) => {
         .on('broadcast', { event: 'connections_update' }, ({ payload }) => {
             if (window.onRemoteConnectionsUpdate) window.onRemoteConnectionsUpdate(payload);
         })
+        .on('broadcast', { event: 'drawing_update' }, ({ payload }) => {
+            if (window.onRemoteDrawingUpdate) window.onRemoteDrawingUpdate(payload);
+        })
+        .on('broadcast', { event: 'drawing_delete' }, ({ payload }) => {
+            if (window.onRemoteDrawingDelete) window.onRemoteDrawingDelete(payload.id);
+        })
         .on('broadcast', { event: 'cursor' }, ({ payload }) => {
             if (window.onRemoteCursorUpdate) window.onRemoteCursorUpdate(payload);
         })
@@ -104,6 +110,16 @@ window.broadcastDelete = (cardId) => {
 window.broadcastConnections = (connections) => {
     if (currentChannel) {
         currentChannel.send({ type: 'broadcast', event: 'connections_update', payload: connections });
+    }
+};
+window.broadcastDrawing = (drawingData) => {
+    if (currentChannel) {
+        currentChannel.send({ type: 'broadcast', event: 'drawing_update', payload: drawingData });
+    }
+};
+window.broadcastDrawingDelete = (drawingId) => {
+    if (currentChannel) {
+        currentChannel.send({ type: 'broadcast', event: 'drawing_delete', payload: { id: drawingId } });
     }
 };
 window.broadcastCursor = (cursorData) => {

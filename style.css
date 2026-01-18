@@ -66,6 +66,15 @@ body {
     background-size: 40px 40px;
 }
 
+#viewport.drawing-mode {
+    cursor: crosshair;
+}
+
+#viewport.eraser-mode .drawing-path {
+    pointer-events: visibleStroke;
+    cursor: crosshair;
+}
+
 #canvas {
     width: 10000px;
     height: 10000px;
@@ -389,16 +398,44 @@ svg#connections-layer {
     stroke-linecap: round;
 }
 
+.drawing-path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: visibleStroke;
+    cursor: pointer;
+}
+
+.drawing-path.selected {
+    filter: drop-shadow(0 0 2px #3b82f6) drop-shadow(0 0 4px #3b82f6);
+}
+
 .connection-line.collapsed {
     stroke-dasharray: 8, 8;
     opacity: 0.3;
+}
+
+.stroke-preview-wrapper {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stroke-preview {
+    background-color: var(--text-main);
+    border-radius: 50%;
 }
 
 .toolbar {
     position: fixed;
     bottom: 24px;
     left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    width: fit-content;
+    margin: 0 auto;
     background: var(--toolbar-bg);
     color: var(--toolbar-text);
     padding: 8px 30px;
@@ -434,6 +471,10 @@ svg#connections-layer {
 .btn-danger { background: #fee2e2; color: #ef4444; }
 .btn-success { background: #10b981; color: white; }
 .btn-secondary { background: #e2e8f0; color: #475569; }
+.btn.active {
+    background-color: #3b82f6;
+    color: white;
+}
 .btn:hover { filter: brightness(0.95); }
 
 .color-dot {
@@ -449,6 +490,65 @@ svg#connections-layer {
 .color-dot.active-color {
     box-shadow: 0 0 0 2px #3b82f6;
     transform: scale(1.15);
+}
+
+#drawing-options-toolbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: fit-content;
+    margin: 0 auto;
+    bottom: 100px; /* メインツールバーの上 */
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 999; /* メインツールバーより手前 */
+}
+
+#drawing-options-toolbar.visible {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#card-color-toolbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: fit-content;
+    margin: 0 auto;
+    bottom: 100px;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 999;
+}
+
+#card-color-toolbar.visible {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.stroke-width-option {
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.stroke-width-option:hover {
+    background-color: var(--menu-hover);
+}
+
+.stroke-width-option.active {
+    background-color: #dbeafe; /* blue-100 */
+}
+
+body.dark-mode .stroke-width-option.active {
+    background-color: #374151; /* gray-700 */
 }
 
 #color-picker {
@@ -872,8 +972,8 @@ button.zoom-btn {
     display: flex !important;
     visibility: hidden;
     opacity: 0;
-    position: absolute;
-    bottom: 100%;
+    position: absolute; /* ボタン基準で配置 */
+    bottom: 100%;    /* ボタンの真上 */
     left: 50%;
     margin-bottom: 12px;
     min-width: 140px;
@@ -889,11 +989,13 @@ button.zoom-btn {
     pointer-events: none;
 }
 
-.card-add-menu-container:hover .card-add-menu {
-    visibility: visible;
-    opacity: 1;
+.card-add-menu-container { cursor: pointer; touch-action: manipulation; position: relative; }
+
+.card-add-menu.visible {
+    visibility: visible !important;
+    opacity: 1 !important;
     transform: translateX(-50%) translateY(0);
-    pointer-events: auto;
+    pointer-events: auto !important;
 }
 
 .card-add-menu button {
@@ -908,16 +1010,6 @@ button.zoom-btn {
     background: var(--menu-hover);
 }
 
-.card-add-menu-container::after {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 160px;
-    height: 20px;
-    background: transparent;
-}
 
 .remote-cursor {
     position: absolute;
@@ -990,7 +1082,7 @@ button.zoom-btn {
     justify-content: center;
 }
 
-#user-count.active {
+.share-wrapper:hover #user-count.active {
     pointer-events: auto;
     opacity: 1;
     transform: translateX(-50%) translateY(0px);
@@ -1011,7 +1103,7 @@ button.zoom-btn {
     100% { opacity: 0; transform: translate(-50%, -200%) scale(1); }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 950px) {
     .toolbar div.flex.items-center.gap-2,
     .toolbar div.bg-gray-200,
     .toolbar span.font-bold {
@@ -1021,16 +1113,20 @@ button.zoom-btn {
         bottom: 16px;
         padding: 6px 10px;
         gap: 8px;
-        width: auto;
-        max-width: 95vw;
         justify-content: flex-start;
         overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
+        flex-wrap: nowrap;
+    }
+    .card-add-menu{
+        position: fixed;
+        width: 300px;
+        height: auto;
+        bottom: 90px;
+        margin-bottom: 0;
+        border-radius: 12px;
     }
     .toolbar::-webkit-scrollbar { display: none; }
-    .btn { padding: 8px 26px; }
+    .btn { padding: 8px 30px; }
     .btn span { display: none !important; }
     #color-picker { gap: 4px; padding: 0 4px; border: none !important; }
     .color-dot { width: 22px; height: 22px; }
@@ -1052,4 +1148,14 @@ button.zoom-btn {
     }
     .pres-left { left: 10px; } 
     .pres-right { right: 10px; }
+}
+
+@media (max-width: 1100px) {
+    #drawing-options-toolbar {
+        bottom: 88px; /* モバイルでのメインツールバーの上 */
+    }
+    #card-color-toolbar {
+        bottom: 88px;
+        padding: 8px 30px;
+    }
 }
