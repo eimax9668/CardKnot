@@ -2,7 +2,7 @@
 <html lang="ja">
 <head prefix="og:http://ogp.me/ns#">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <meta property="og:title" content="CardKnot">
     <meta property="og:description" content="CardKnotは、無限のキャンバスでアイデアを整理し、直感的につなぎ合わせることができる思考整理ツールです。">
     <meta property="og:image" content="https://cardknot.f5.si/images/image.png">
@@ -40,16 +40,16 @@
     
     <!-- Zoom Controls -->
     <div class="zoom-controls">
-        <div class="zoom-btn" onclick="adjustZoom(1.2)" title="拡大"><i class="bi bi-plus-lg"></i></div>
+        <button class="zoom-btn" onclick="adjustZoom(1.2)" title="拡大"><i class="bi bi-plus-lg"></i></button>
         <div id="zoom-percent">100%</div>
-        <div class="zoom-btn" onclick="adjustZoom(0.8)" title="縮小"><i class="bi bi-dash-lg"></i></div>
+        <button class="zoom-btn" onclick="adjustZoom(0.8)" title="縮小"><i class="bi bi-dash-lg"></i></button>
         <div class="h-px bg-gray-100 mx-1 my-1"></div>
-        <div class="zoom-btn" onclick="resetZoom()" title="リセット"><i class="bi bi-aspect-ratio"></i></div>
+        <button class="zoom-btn" onclick="resetZoom()" title="リセット"><i class="bi bi-aspect-ratio"></i></button>
         <div class="h-px bg-gray-100 mx-1 my-1"></div>
         <div id="dark-mode-btn" class="zoom-btn" onclick="toggleDarkMode()" title="ダークモード切替"><i class="bi bi-moon"></i></div>
         <div class="h-px bg-gray-100 mx-1 my-1"></div>
-        <div class="zoom-btn" onclick="exportData()" title="JSON保存"><i class="bi bi-download"></i></div>
-        <div class="zoom-btn" onclick="importData()" title="JSON読み込み"><i class="bi bi-upload"></i></div>
+        <button class="zoom-btn" onclick="exportData()" title="JSON保存"><i class="bi bi-download"></i></button>
+        <button class="zoom-btn" onclick="importData()" title="JSON読み込み"><i class="bi bi-upload"></i></button>
         <input type="file" id="import-file" style="display: none" accept=".json" onchange="handleFileSelect(this)">
     </div>
 
@@ -164,6 +164,43 @@
         </div>
     </div>
 
+    <!-- Card Color Toolbar -->
+    <div id="card-color-toolbar" class="toolbar shadow-2xl">
+        <div class="flex gap-1.5 px-2">
+            <div class="color-dot" data-color="#ffffff" style="background: #ffffff;" onclick="changeColor('#ffffff')"></div>
+            <div class="color-dot" data-color="#fef08a" style="background: #fef08a;" onclick="changeColor('#fef08a')"></div>
+            <div class="color-dot" data-color="#bbf7d0" style="background: #bbf7d0;" onclick="changeColor('#bbf7d0')"></div>
+            <div class="color-dot" data-color="#bfdbfe" style="background: #bfdbfe;" onclick="changeColor('#bfdbfe')"></div>
+            <div class="color-dot" data-color="#fecaca" style="background: #fecaca;" onclick="changeColor('#fecaca')"></div>
+        </div>
+    </div>
+
+    <!-- Drawing Options Toolbar -->
+    <div id="drawing-options-toolbar" class="toolbar shadow-2xl">
+        <div class="flex items-center px-2 border-r border-gray-100">
+            <button id="eraser-btn" class="btn btn-secondary" onclick="toggleEraserMode()" title="消しゴム" style="width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 50%;">
+                <i class="bi bi-eraser-fill"></i>
+            </button>
+        </div>
+        <div id="drawing-color-picker" class="flex gap-1.5 px-2 border-r border-gray-100">
+            <!-- Colors will be populated by JS -->
+        </div>
+        <div id="stroke-width-picker" class="flex items-center gap-4 px-3">
+            <div class="stroke-width-option" data-width="2" title="細い">
+                <div class="stroke-preview-wrapper"><div class="stroke-preview" style="width: 2px; height: 2px;"></div></div>
+            </div>
+            <div class="stroke-width-option active" data-width="4" title="普通">
+                <div class="stroke-preview-wrapper"><div class="stroke-preview" style="width: 4px; height: 4px;"></div></div>
+            </div>
+            <div class="stroke-width-option" data-width="8" title="太い">
+                <div class="stroke-preview-wrapper"><div class="stroke-preview" style="width: 8px; height: 8px;"></div></div>
+            </div>
+            <div class="stroke-width-option" data-width="16" title="極太">
+                <div class="stroke-preview-wrapper"><div class="stroke-preview" style="width: 16px; height: 16px;"></div></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toolbar -->
     <div class="toolbar shadow-2xl">
         <div class="flex items-center gap-2 px-2">
@@ -200,32 +237,27 @@
         <div class="h-6 w-px bg-gray-200"></div>
         
         <div class="relative group card-add-menu-container">
-            <div class="card-add-menu">
-                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('text')">
+            <button id="add-menu-trigger" class="btn btn-primary" onclick="handleAddButtonClick(event)" onmouseenter="handleAddButtonHover(event)" onmouseleave="handleAddButtonLeave(event)">
+                <i class="bi bi-plus-lg"></i> <span>カード追加</span>
+            </button>    
+            <div id="global-card-add-menu" class="card-add-menu" onmouseenter="handleMenuHover(event)" onmouseleave="handleMenuLeave(event)">
+                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('text'); toggleGlobalAddMenu(event)">
                     <i class="bi bi-card-text text-blue-500"></i> テキスト
                 </button>
-                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('image')">
+                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('image'); toggleGlobalAddMenu(event)">
                     <i class="bi bi-image text-green-500"></i> 画像
                 </button>
-                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('video')">
+                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('video'); toggleGlobalAddMenu(event)">
                     <i class="bi bi-camera-video text-red-500"></i> 動画
                 </button>
-                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('link')">
+                <button class="px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-3 text-sm transition-colors text-gray-700 dark:text-gray-200" onclick="addNewCard('link'); toggleGlobalAddMenu(event)">
                     <i class="bi bi-link-45deg text-purple-500"></i> リンク
                 </button>
             </div>
-            <button class="btn btn-primary" onclick="addNewCard('text')">
-                <i class="bi bi-plus-lg"></i> <span>カード追加</span>
-            </button>
         </div>
-
-        <div id="color-picker" class="flex gap-1.5 px-2 border-l border-r border-gray-100">
-            <div class="color-dot" data-color="#ffffff" style="background: #ffffff;" onclick="changeColor('#ffffff')"></div>
-            <div class="color-dot" data-color="#fef08a" style="background: #fef08a;" onclick="changeColor('#fef08a')"></div>
-            <div class="color-dot" data-color="#bbf7d0" style="background: #bbf7d0;" onclick="changeColor('#bbf7d0')"></div>
-            <div class="color-dot" data-color="#bfdbfe" style="background: #bfdbfe;" onclick="changeColor('#bfdbfe')"></div>
-            <div class="color-dot" data-color="#fecaca" style="background: #fecaca;" onclick="changeColor('#fecaca')"></div>
-        </div>
+        <button id="drawing-mode-btn" class="btn btn-secondary" onclick="toggleDrawingMode()" title="手書きモード">
+            <i class="bi bi-pencil"></i><span>手書き</span>
+        </button>
 
         <button class="btn btn-danger" onclick="deleteSelected()" title="選択中を削除">
             <i class="bi bi-trash3"></i>
@@ -240,6 +272,7 @@
             <i class="bi bi-chevron-down"></i>
         </button>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>

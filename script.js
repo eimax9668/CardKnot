@@ -7,6 +7,7 @@ const zoomPercentEl = document.getElementById('zoom-percent');
 let cards = [];
 let connections = [];
 let selectedCards = new Set();
+let selectedDrawings = new Set();
 
 let scale = 1;
 let zoomActivated = false;
@@ -31,6 +32,7 @@ let redrawTimeout = null;
 let saveTimeout = null;
 let isLoading = false;
 let initialCardPositions = new Map();
+let initialDrawingPositions = new Map();
 let selectionStart = { x: 0, y: 0 };
 let selectionBox = null;
 let undoStack = [];
@@ -43,8 +45,10 @@ let minimapState = { minX: 0, minY: 0, scale: 1 };
 let isMinimapDragging = false;
 let resizeStart = { x: 0, y: 0 };
 let resizeStartDims = { w: 0, h: 0 };
-let resizingCardId = null;
-let isRemoteUpdate = false;
+let isDrawingMode = false;
+let isFreehandDrawing = false;
+let isEraserMode = false;
+let drawings = [];
 const USER_COLORS = [
     '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', 
     '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', 
@@ -53,6 +57,11 @@ const USER_COLORS = [
 let myCursorId = Math.random().toString(36).substr(2, 9);
 let myCursorColor = localStorage.getItem('cardKnotUserColor') || USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 let myUserName = localStorage.getItem('cardKnotUserName') || ('User ' + myCursorId.substr(0, 4));
+let currentDrawingColor = myCursorColor;
+let currentDrawingStrokeWidth = 4;
+let currentDrawingPath = null;
+let resizingCardId = null;
+let isRemoteUpdate = false;
 let lastCursorUpdate = 0;
 let lastMousePos = { x: 0, y: 0 };
 let remoteCursors = new Map(); // 相手のカーソル管理用
@@ -610,11 +619,15 @@ function updateSelectionVisuals() {
     cards.forEach(c => c.el.classList.remove('selected'));
     selectedCards.forEach(el => el.classList.add('selected'));
     
+    const toolbar = document.getElementById('card-color-toolbar');
+    
     if (selectedCards.size > 0) {
         const last = Array.from(selectedCards).pop();
         updateToolbarColors(rgbToHex(last.style.backgroundColor));
+        if (toolbar) toolbar.classList.add('visible');
     } else {
         updateToolbarColors(null);
+        if (toolbar) toolbar.classList.remove('visible');
     }
 }
 
@@ -633,6 +646,8 @@ function removeFromSelection(el) {
 function clearSelection() {
     selectedCards.clear();
     updateSelectionVisuals();
+    selectedDrawings.forEach(el => el.classList.remove('selected'));
+    selectedDrawings.clear();
     broadcastMyCursor();
 }
 
@@ -640,11 +655,15 @@ function selectSingleCard(el) {
     selectedCards.clear();
     selectedCards.add(el);
     updateSelectionVisuals();
+    selectedDrawings.forEach(el => el.classList.remove('selected'));
+    selectedDrawings.clear();
     broadcastMyCursor();
 }
 
 function updateToolbarColors(hex) {
-    document.querySelectorAll('.color-dot').forEach(dot => {
+    const container = document.getElementById('card-color-toolbar');
+    if (!container) return;
+    container.querySelectorAll('.color-dot').forEach(dot => {
         if (dot.dataset.color === hex) dot.classList.add('active-color');
         else dot.classList.remove('active-color');
     });
@@ -662,6 +681,14 @@ function startDrag(x, y) {
                 x: parseFloat(el.style.left),
                 y: parseFloat(el.style.top)
             });
+        }
+    });
+
+    initialDrawingPositions.clear();
+    selectedDrawings.forEach(el => {
+        const drawing = drawings.find(d => d.id === el.id);
+        if (drawing) {
+            initialDrawingPositions.set(el.id, JSON.parse(JSON.stringify(drawing.points)));
         }
     });
 }
@@ -791,6 +818,12 @@ viewport.addEventListener('mousedown', (e) => {
     const isBackground = e.target === viewport || e.target === canvasZoomWrap || e.target === canvas;
     
     if (isBackground) {
+        // Shiftキーが押されている場合は描画せず、範囲選択などの通常動作へ流す
+        if (isDrawingMode && (e.button === 0 || e.touches) && !e.shiftKey) {
+            startFreehandDraw(e);
+            return;
+        }
+
         if (e.button === 0 && e.shiftKey) { // 左クリック + Shift: 範囲選択
             isSelecting = true;
             selectionStart = { x: e.clientX, y: e.clientY };
@@ -834,6 +867,11 @@ const handleMove = (e) => {
             updateTransform();
             applyZoomUpdate();
         }
+        return;
+    }
+
+    if (isFreehandDrawing) {
+        continueFreehandDraw(e);
         return;
     }
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -880,6 +918,23 @@ const handleMove = (e) => {
             else if (!e.shiftKey) selectedCards.delete(card.el);
         });
         updateSelectionVisuals();
+
+        // 手書き線の選択判定
+        const drawingPaths = svgLayer.querySelectorAll('.drawing-path');
+        drawingPaths.forEach(path => {
+            const rect = path.getBoundingClientRect();
+            const intersect = !(boxRect.right < rect.left || 
+                                boxRect.left > rect.right || 
+                                boxRect.bottom < rect.top || 
+                                boxRect.top > rect.bottom);
+            if (intersect) {
+                selectedDrawings.add(path);
+                path.classList.add('selected');
+            } else if (!e.shiftKey) {
+                selectedDrawings.delete(path);
+                path.classList.remove('selected');
+            }
+        });
     }
     const coords = screenToCanvas(clientX, clientY);
     if (isDrawingLine && tempLine) {
@@ -906,7 +961,7 @@ const handleMove = (e) => {
             updateConnections();
         }
     }
-    if (isDragging && selectedCards.size > 0) {
+    if (isDragging && (selectedCards.size > 0 || selectedDrawings.size > 0)) {
         const startCoords = screenToCanvas(dragStart.x, dragStart.y);
         const dx = coords.x - startCoords.x;
         const dy = coords.y - startCoords.y;
@@ -928,12 +983,29 @@ const handleMove = (e) => {
                 }
             }
         });
+
+        selectedDrawings.forEach(el => {
+            const initialPoints = initialDrawingPositions.get(el.id);
+            const drawing = drawings.find(d => d.id === el.id);
+            if (initialPoints && drawing) {
+                drawing.points = initialPoints.map(p => ({
+                    x: p.x + dx,
+                    y: p.y + dy
+                }));
+                el.setAttribute('d', pointsToPath(drawing.points));
+                if (window.broadcastDrawing) window.broadcastDrawing(drawing);
+            }
+        });
         updateConnections();
     }
 };
 
 const handleUp = (e) => {
     initialPinchDistance = null;
+    if (isFreehandDrawing) {
+        endFreehandDraw(e);
+    }
+
     if (isDrawingLine) {
         const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
         const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
@@ -969,8 +1041,10 @@ const handleUp = (e) => {
     if (isDragging && dragStartState) {
         // ドラッグ終了時に位置が変わっていたらUndoスタックに保存
         const currentState = serializeState();
-        const hasChanged = JSON.stringify(currentState.cards.map(c => ({id:c.id, x:c.x, y:c.y}))) !== 
-                           JSON.stringify(dragStartState.cards.map(c => ({id:c.id, x:c.x, y:c.y})));
+        const cardsChanged = JSON.stringify(currentState.cards.map(c => ({id:c.id, x:c.x, y:c.y}))) !== 
+                             JSON.stringify(dragStartState.cards.map(c => ({id:c.id, x:c.x, y:c.y})));
+        const drawingsChanged = JSON.stringify(currentState.drawings) !== JSON.stringify(dragStartState.drawings);
+        const hasChanged = cardsChanged || drawingsChanged;
         if (hasChanged) {
             undoStack.push(dragStartState);
         }
@@ -993,7 +1067,15 @@ const handleUp = (e) => {
 window.addEventListener('mousemove', handleMove);
 window.addEventListener('mouseup', handleUp);
 viewport.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1 && (e.target === viewport || e.target === canvasZoomWrap || e.target === canvas)) {
+    const isBackground = e.target === viewport || e.target === canvasZoomWrap || e.target === canvas;
+
+    // Shiftキーが押されている場合は描画しない
+    if (isDrawingMode && e.touches.length === 1 && isBackground && !e.shiftKey) {
+        startFreehandDraw(e);
+        return;
+    }
+
+    if (e.touches.length === 1 && isBackground) {
         isPanning = true;
         dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         canvasStart = { x: translateX, y: translateY };
@@ -1005,7 +1087,7 @@ viewport.addEventListener('touchstart', (e) => {
 }, { passive: false });
 viewport.addEventListener('touchmove', (e) => {
     handleMove(e);
-    if (isPanning || isDragging || isDrawingLine || isResizing || e.touches.length === 2) {
+    if (isPanning || isDragging || isDrawingLine || isResizing || isFreehandDrawing || e.touches.length === 2) {
         e.preventDefault();
     }
 }, { passive: false });
@@ -1033,20 +1115,37 @@ function changeColor(color) {
 }
 
 function deleteSelected() {
-    if (selectedCards.size > 0) {
+    if (selectedCards.size > 0 || selectedDrawings.size > 0) {
         saveState();
-        const idsToRemove = new Set();
-        selectedCards.forEach(el => {
-            idsToRemove.add(el.id);
-            el.remove();
-            if (window.broadcastDelete) window.broadcastDelete(el.id);
-        });
-        connections = connections.filter(c => !idsToRemove.has(c.from) && !idsToRemove.has(c.to));
-        cards = cards.filter(c => !idsToRemove.has(c.id));
-        selectedCards.clear();
-        updateConnections();
-        if (window.broadcastConnections) window.broadcastConnections(connections);
-        updateToolbarColors(null);
+        
+        // カードの削除
+        if (selectedCards.size > 0) {
+            const idsToRemove = new Set();
+            selectedCards.forEach(el => {
+                idsToRemove.add(el.id);
+                el.remove();
+                if (window.broadcastDelete) window.broadcastDelete(el.id);
+            });
+            connections = connections.filter(c => !idsToRemove.has(c.from) && !idsToRemove.has(c.to));
+            cards = cards.filter(c => !idsToRemove.has(c.id));
+            selectedCards.clear();
+            updateConnections();
+            if (window.broadcastConnections) window.broadcastConnections(connections);
+        }
+
+        // 手書き線の削除
+        if (selectedDrawings.size > 0) {
+            const drawingIdsToRemove = new Set();
+            selectedDrawings.forEach(el => {
+                drawingIdsToRemove.add(el.id);
+                el.remove();
+                if (window.broadcastDrawingDelete) window.broadcastDrawingDelete(el.id);
+            });
+            drawings = drawings.filter(d => !drawingIdsToRemove.has(d.id));
+            selectedDrawings.clear();
+        }
+
+        updateSelectionVisuals();
         saveData();
         broadcastMyCursor();
     }
@@ -1308,6 +1407,8 @@ function exitPresentation() {
 }
 
 window.addEventListener('keydown', (e) => {
+    if (e.key === 'Shift') viewport.classList.add('shift-active');
+
     const isInput = e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT';
 
     if (document.getElementById('presentation-overlay').style.display === 'flex') {
@@ -1360,13 +1461,37 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideContextMenu();
 });
 
+window.addEventListener('keyup', (e) => {
+    if (e.key === 'Shift') viewport.classList.remove('shift-active');
+});
+
 viewport.addEventListener('dblclick', (e) => {
+    if (isDrawingMode || isEraserMode) return;
     if (e.target === viewport || e.target === canvas) {
         saveState();
         const coords = screenToCanvas(e.clientX, e.clientY);
         addCard(coords.x - 110, coords.y - 75);
     }
 });
+
+function copyToClipboardFallback(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showToast("リンクをコピーしました");
+    } catch (err) {
+        console.error('Copy failed', err);
+        showToast("コピーに失敗しました");
+    }
+    document.body.removeChild(textArea);
+}
 
 function handleShare() {
     const btn = document.getElementById('share-btn');
@@ -1375,9 +1500,15 @@ function handleShare() {
 
     if (currentRoom) {
         // 既にルームにいる場合はリンクをコピー
-        navigator.clipboard.writeText(window.location.href).then(() => {
-            showToast("リンクをコピーしました");
-        });
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast("リンクをコピーしました");
+            }).catch(() => {
+                copyToClipboardFallback(window.location.href);
+            });
+        } else {
+            copyToClipboardFallback(window.location.href);
+        }
     } else {
         // ルーム作成
         // セキュリティ向上のため、推測されにくいUUIDを使用する
@@ -1539,6 +1670,24 @@ window.onload = () => {
     createContextMenu();
     initMinimap();
     initUserName();
+    initDrawingOptions();
+    
+    // カード追加メニュー外をクリックしたときにメニューを閉じる（モバイルのみ）
+    window.addEventListener('click', (e) => {
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (!isTouchDevice) {
+            // PCではホバーベースなので、クリックイベントでは閉じない
+            return;
+        }
+        const menu = document.getElementById('global-card-add-menu');
+        const trigger = document.getElementById('add-menu-trigger');
+        if (menu && menu.classList.contains('visible')) {
+            // メニューやボタンがクリックされた場合は閉じない
+            if (!menu.contains(e.target) && trigger && !trigger.contains(e.target)) {
+                menu.classList.remove('visible');
+            }
+        }
+    });
 
     // URLパラメータからルームIDを取得して接続
     const urlParams = new URLSearchParams(window.location.search);
@@ -1633,6 +1782,11 @@ function loadData() {
             cards.forEach(c => { if (c.collapsed) collapseChildren(c.id); });
             updateConnections();
         }
+
+        if (data.drawings) {
+            drawings = data.drawings;
+            updateDrawings();
+        }
     } catch (e) {
         console.error("Failed to load data", e);
         isLoading = false;
@@ -1666,7 +1820,8 @@ function serializeCard(c) {
 function serializeState() {
     return {
         cards: cards.map(c => serializeCard(c)),
-        connections: JSON.parse(JSON.stringify(connections))
+        connections: JSON.parse(JSON.stringify(connections)),
+        drawings: JSON.parse(JSON.stringify(drawings))
     };
 }
 
@@ -1681,19 +1836,24 @@ function restoreState(state) {
     cards.forEach(c => c.el.remove());
     cards = [];
     selectedCards.clear();
+    selectedDrawings.clear();
     updateToolbarColors(null);
     
     const lines = svgLayer.querySelectorAll('.connection-line');
     lines.forEach(l => l.remove());
     connections = [];
+    drawings = [];
+    updateDrawings();
 
     // Restore
     state.cards.forEach(c => {
         addCard(c.x, c.y, c.text, c.imageUrl, c.videoUrl, c.linkUrl, c.id, c.color, c.collapsed, c.pinned, c.favorite, c.type || 'text', c.width, c.height, c.linkTitle);
     });
     connections = state.connections;
+    drawings = state.drawings || [];
     cards.forEach(c => { if (c.collapsed) collapseChildren(c.id); });
     updateConnections();
+    updateDrawings();
     saveData();
 }
 
@@ -1841,6 +2001,302 @@ function navigateToCard(cardId) {
     translateY = (window.innerHeight / 2) - (cardCenterY * scale);
     updateTransform();
     applyZoomUpdate();
+}
+
+function toggleDrawingMode() {
+    isDrawingMode = !isDrawingMode;
+    const btn = document.getElementById('drawing-mode-btn');
+    const drawingOptionsToolbar = document.getElementById('drawing-options-toolbar');
+    if (isDrawingMode) {
+        btn.classList.add('active');
+        viewport.classList.add('drawing-mode');
+        drawingOptionsToolbar.classList.add('visible');
+        clearSelection();
+    } else {
+        btn.classList.remove('active');
+        viewport.classList.remove('drawing-mode');
+        drawingOptionsToolbar.classList.remove('visible');
+        // 手書きモード終了時に消しゴムモードも解除
+        isEraserMode = false;
+        document.getElementById('eraser-btn').classList.remove('active');
+        viewport.classList.remove('eraser-mode');
+    }
+}
+
+function toggleEraserMode() {
+    isEraserMode = !isEraserMode;
+    const btn = document.getElementById('eraser-btn');
+    if (isEraserMode) {
+        btn.classList.add('active');
+        viewport.classList.add('eraser-mode');
+    } else {
+        btn.classList.remove('active');
+        viewport.classList.remove('eraser-mode');
+    }
+}
+
+function startFreehandDraw(e) {
+    if (e.button !== 0 && !e.touches) return;
+    
+    if (isEraserMode) {
+        isFreehandDrawing = true; // ドラッグ状態の追跡に再利用
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        eraseAt(clientX, clientY);
+        return;
+    }
+
+    isFreehandDrawing = true;
+    saveState();
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const coords = screenToCanvas(clientX, clientY);
+    
+    currentDrawingPath = {
+        id: 'draw-' + Math.random().toString(36).substr(2, 9),
+        points: [coords],
+        color: currentDrawingColor,
+        strokeWidth: currentDrawingStrokeWidth
+    };
+
+    tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    tempLine.setAttribute('class', 'drawing-path');
+    tempLine.style.stroke = currentDrawingPath.color;
+    tempLine.style.strokeWidth = `${currentDrawingPath.strokeWidth}px`;
+    tempLine.setAttribute('d', `M ${coords.x} ${coords.y}`);
+    svgLayer.appendChild(tempLine);
+}
+
+function continueFreehandDraw(e) {
+    if (!isFreehandDrawing) return;
+
+    if (isEraserMode) {
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        eraseAt(clientX, clientY);
+        return;
+    }
+
+    if (!currentDrawingPath) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const coords = screenToCanvas(clientX, clientY);
+
+    const lastPoint = currentDrawingPath.points[currentDrawingPath.points.length - 1];
+    const dist = Math.sqrt(Math.pow(coords.x - lastPoint.x, 2) + Math.pow(coords.y - lastPoint.y, 2));
+    if (dist < 5 / scale) return;
+
+    currentDrawingPath.points.push(coords);
+    
+    if (tempLine) {
+        const currentD = tempLine.getAttribute('d');
+        tempLine.setAttribute('d', currentD + ` L ${coords.x} ${coords.y}`);
+    }
+}
+
+function endFreehandDraw(e) {
+    if (!isFreehandDrawing) return;
+    isFreehandDrawing = false;
+    
+    if (isEraserMode) return;
+    if (!currentDrawingPath) return;
+    
+    if (tempLine) {
+        tempLine.remove();
+        tempLine = null;
+    }
+
+    if (currentDrawingPath.points.length > 1) {
+        drawings.push(currentDrawingPath);
+        if (window.broadcastDrawing) window.broadcastDrawing(currentDrawingPath);
+    }
+    
+    currentDrawingPath = null;
+    
+    updateDrawings();
+    saveData();
+}
+
+function eraseAt(clientX, clientY) {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (el && el.classList.contains('drawing-path')) {
+        deleteDrawing(el.id);
+    }
+}
+
+function deleteDrawing(id) {
+    const index = drawings.findIndex(d => d.id === id);
+    if (index !== -1) {
+        drawings.splice(index, 1);
+        const el = document.getElementById(id);
+        if (el) el.remove();
+        saveData();
+        if (window.broadcastDrawingDelete) window.broadcastDrawingDelete(id);
+    }
+}
+
+function addDrawingListeners(pathElement) {
+    // PC: ダブルクリックで削除
+    pathElement.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        deleteDrawing(pathElement.id);
+    });
+    
+    // Mobile: ダブルタップで削除
+    let lastTap = 0;
+    pathElement.addEventListener('touchend', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            deleteDrawing(pathElement.id);
+        }
+        lastTap = currentTime;
+    });
+
+    // クリック選択とドラッグ移動
+    const handleStart = (e) => {
+        if (isEraserMode || isDrawingMode) return;
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        if (e.shiftKey) {
+            if (selectedDrawings.has(pathElement)) {
+                selectedDrawings.delete(pathElement);
+                pathElement.classList.remove('selected');
+            } else {
+                selectedDrawings.add(pathElement);
+                pathElement.classList.add('selected');
+            }
+        } else {
+            if (!selectedDrawings.has(pathElement)) {
+                clearSelection();
+                selectedDrawings.add(pathElement);
+                pathElement.classList.add('selected');
+            }
+        }
+        broadcastMyCursor();
+
+        if (selectedDrawings.has(pathElement)) {
+            startDrag(clientX, clientY);
+        }
+        e.stopPropagation();
+        if (e.type === 'touchstart') e.preventDefault();
+    };
+
+    pathElement.addEventListener('mousedown', handleStart);
+    pathElement.addEventListener('touchstart', handleStart, { passive: false });
+}
+
+function updateDrawings() {
+    svgLayer.querySelectorAll('.drawing-path').forEach(p => {
+        if (p !== tempLine) p.remove();
+    });
+
+    drawings.forEach(drawing => {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('id', drawing.id);
+        path.setAttribute('class', 'drawing-path');
+        path.style.stroke = drawing.color || '#3b82f6';
+        path.style.strokeWidth = `${(drawing.strokeWidth || 4)}px`;
+        path.setAttribute('d', pointsToPath(drawing.points));
+        
+        addDrawingListeners(path);
+        
+        svgLayer.appendChild(path);
+    });
+}
+
+function initDrawingOptions() {
+    const drawingColorPicker = document.getElementById('drawing-color-picker');
+    
+    // ペイント専用のカラーリスト
+    const PAINT_COLORS = [
+        '#1f2937', // Black/Dark
+        '#ffffff', // White
+        '#ef4444', // Red
+        '#f97316', // Orange
+        '#facc15', // Yellow
+        '#22c55e', // Green
+        '#3b82f6', // Blue
+        '#8b5cf6', // Purple
+        '#ec4899', // Pink
+        '#64748b'  // Gray
+    ];
+
+    let colorHtml = '';
+    PAINT_COLORS.forEach(color => {
+        colorHtml += `<div class="color-dot" data-color="${color}" style="background: ${color};"></div>`;
+    });
+    drawingColorPicker.innerHTML = colorHtml;
+
+    // 色選択イベント
+    drawingColorPicker.querySelectorAll('.color-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            const color = dot.dataset.color;
+            currentDrawingColor = color;
+            drawingColorPicker.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active-color'));
+            dot.classList.add('active-color');
+            if (isEraserMode) toggleEraserMode(); // 色を選んだら消しゴムモードを解除
+
+            // 選択中の手書き線の色を変更
+            if (selectedDrawings.size > 0) {
+                saveState();
+                selectedDrawings.forEach(el => {
+                    const drawing = drawings.find(d => d.id === el.id);
+                    if (drawing) {
+                        drawing.color = color;
+                        el.style.stroke = color;
+                        if (window.broadcastDrawing) window.broadcastDrawing(drawing);
+                    }
+                });
+                saveData();
+            }
+        });
+    });
+
+    // 太さ選択イベント
+    const strokeWidthPicker = document.getElementById('stroke-width-picker');
+    strokeWidthPicker.querySelectorAll('.stroke-width-option').forEach(option => {
+        option.addEventListener('click', () => {
+            currentDrawingStrokeWidth = parseInt(option.dataset.width, 10);
+            strokeWidthPicker.querySelectorAll('.stroke-width-option').forEach(o => o.classList.remove('active'));
+            option.classList.add('active');
+
+            // 選択中の手書き線の太さを変更
+            if (selectedDrawings.size > 0) {
+                saveState();
+                selectedDrawings.forEach(el => {
+                    const drawing = drawings.find(d => d.id === el.id);
+                    if (drawing) {
+                        drawing.strokeWidth = currentDrawingStrokeWidth;
+                        el.style.strokeWidth = `${currentDrawingStrokeWidth}px`;
+                        if (window.broadcastDrawing) window.broadcastDrawing(drawing);
+                    }
+                });
+                saveData();
+            }
+        });
+    });
+
+    // 初期状態の設定
+    // 色
+    let initialColorDot = drawingColorPicker.querySelector(`.color-dot[data-color="${currentDrawingColor}"]`);
+    
+    // 現在の色がリストにない場合（初期ロード時など）、リストの先頭（黒系）をデフォルトにする
+    if (!initialColorDot) {
+        currentDrawingColor = PAINT_COLORS[0];
+        initialColorDot = drawingColorPicker.querySelector(`.color-dot[data-color="${currentDrawingColor}"]`);
+    }
+
+    if (initialColorDot) {
+        initialColorDot.classList.add('active-color');
+    }
+    // 太さ (デフォルトで active クラスがHTMLに付いているので不要)
 }
 
 function createContextMenu() {
@@ -1992,6 +2448,95 @@ function handleContextMenuAction(action) {
             });
             saveData();
         }
+    }
+}
+
+function handleAddButtonClick(event) {
+    event.stopPropagation();
+    // PCではクリックでテキストカードを追加（メニューは表示したまま）
+    // モバイルでは従来通りメニューの表示/非表示を切り替え
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) {
+        // PC: テキストカードを追加
+        addNewCard('text');
+    } else {
+        // モバイル: メニューの表示/非表示を切り替え
+        const menu = document.getElementById('global-card-add-menu');
+        if (menu) {
+            menu.classList.toggle('visible');
+        }
+    }
+}
+
+function handleAddButtonHover(event) {
+    // PCのみでホバー時にメニューを表示
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) {
+        const menu = document.getElementById('global-card-add-menu');
+        if (menu) {
+            menu.classList.add('visible');
+        }
+    }
+}
+
+function handleAddButtonLeave(event) {
+    // PCのみでホバー解除時にメニューを閉じる（ただしメニュー内にホバーしている場合は閉じない）
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) {
+        const menu = document.getElementById('global-card-add-menu');
+        const relatedTarget = event.relatedTarget;
+        // メニュー内にマウスが移動している場合は閉じない
+        if (menu && relatedTarget && menu.contains(relatedTarget)) {
+            return;
+        }
+        // 少し遅延させてメニューにマウスが移動する時間を与える
+        setTimeout(() => {
+            if (menu && !menu.matches(':hover') && !document.getElementById('add-menu-trigger')?.matches(':hover')) {
+                menu.classList.remove('visible');
+            }
+        }, 100);
+    }
+}
+
+function handleMenuHover(event) {
+    // メニューにホバーしている間は表示を維持
+    const menu = document.getElementById('global-card-add-menu');
+    if (menu) {
+        menu.classList.add('visible');
+    }
+}
+
+function handleMenuLeave(event) {
+    // PCのみでメニューから離れたときにメニューを閉じる（ただしトリガーボタンに移動している場合は閉じない）
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) {
+        const menu = document.getElementById('global-card-add-menu');
+        const relatedTarget = event.relatedTarget;
+        const trigger = document.getElementById('add-menu-trigger');
+        // トリガーボタン内にマウスが移動している場合は閉じない
+        if (relatedTarget && trigger && trigger.contains(relatedTarget)) {
+            return;
+        }
+        // 少し遅延させてトリガーボタンにマウスが移動する時間を与える
+        setTimeout(() => {
+            if (menu && !menu.matches(':hover') && trigger && !trigger.matches(':hover')) {
+                menu.classList.remove('visible');
+            }
+        }, 100);
+    }
+}
+
+function toggleGlobalAddMenu(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    // PCではメニューを閉じない（ホバーで制御）
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) return;
+
+    const menu = document.getElementById('global-card-add-menu');
+    if (menu) {
+        menu.classList.remove('visible');
     }
 }
 
@@ -2220,6 +2765,38 @@ async function autoFillLinkCardInfo() {
     fetchBtn.innerHTML = originalBtnText;
 }
 
+function line(pointA, pointB) {
+    const lengthX = pointB.x - pointA.x;
+    const lengthY = pointB.y - pointA.y;
+    return {
+      length: Math.sqrt(Math.pow(lengthX, 2) + Math.pow(lengthY, 2)),
+      angle: Math.atan2(lengthY, lengthX)
+    };
+}
+  
+function controlPoint(current, previous, next, reverse) {
+    const p = previous || current;
+    const n = next || current;
+    const smoothing = 0.2;
+    const o = line(p, n);
+    const angle = o.angle + (reverse ? Math.PI : 0);
+    const length = o.length * smoothing;
+    const x = current.x + Math.cos(angle) * length;
+    const y = current.y + Math.sin(angle) * length;
+    return [x, y];
+}
+
+function pointsToPath(points) {
+    if (!points || points.length < 2) return points && points.length === 1 ? `M ${points[0].x} ${points[0].y}` : "";
+    let d = `M ${points[0].x},${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+        const [cpsX, cpsY] = controlPoint(points[i - 1], points[i - 2], points[i]);
+        const [cpeX, cpeY] = controlPoint(points[i], points[i - 1], points[i + 1], true);
+        d += ` C ${cpsX},${cpsY} ${cpeX},${cpeY} ${points[i].x},${points[i].y}`;
+    }
+    return d;
+}
+
 function exportData() {
     const data = {
         ...serializeState(),
@@ -2263,10 +2840,13 @@ function handleFileSelect(input) {
             cards.forEach(c => c.el.remove());
             cards = [];
             selectedCards.clear();
+            selectedDrawings.clear();
             updateToolbarColors(null);
             const lines = svgLayer.querySelectorAll('.connection-line');
             lines.forEach(l => l.remove());
             connections = [];
+            drawings = [];
+            updateDrawings();
 
             // データの復元
             if (data.view) {
@@ -2287,6 +2867,11 @@ function handleFileSelect(input) {
                 connections = data.connections;
                 cards.forEach(c => { if (c.collapsed) collapseChildren(c.id); });
                 updateConnections();
+            }
+
+            if (data.drawings) {
+                drawings = data.drawings;
+                updateDrawings();
             }
             
             saveData(); // localStorageにも保存
@@ -2584,5 +3169,22 @@ window.onRemoteConnectionsUpdate = function(newConnections) {
     isRemoteUpdate = true;
     connections = newConnections;
     updateConnections();
+    isRemoteUpdate = false;
+};
+
+window.onRemoteDrawingUpdate = function(drawingData) {
+    isRemoteUpdate = true;
+    const existing = drawings.find(d => d.id === drawingData.id);
+    if (!existing) {
+        drawings.push(drawingData);
+        updateDrawings();
+    }
+    isRemoteUpdate = false;
+};
+
+window.onRemoteDrawingDelete = function(drawingId) {
+    isRemoteUpdate = true;
+    drawings = drawings.filter(d => d.id !== drawingId);
+    updateDrawings();
     isRemoteUpdate = false;
 };
