@@ -37,11 +37,16 @@
             </a>
             <div class="hidden md:flex items-center gap-6">
                 <div class="flex items-center gap-6 text-sm font-medium text-slate-600 mr-2">
-                    <a href="index.html" class="hover:text-blue-600 transition-colors">ホーム</a>
-                    <a href="help.html" class="hover:text-blue-600 transition-colors">使い方</a>
-                    <a href="privacy.html" class="hover:text-blue-600 transition-colors">プライバシー</a>
+                    <a href="index.html" class="hover:text-blue-600 transition-colors" data-i18n="nav.home">ホーム</a>
+                    <a href="help.html" class="hover:text-blue-600 transition-colors" data-i18n="nav.help">使い方</a>
+                    <a href="privacy.html" class="hover:text-blue-600 transition-colors" data-i18n="nav.privacy">プライバシー</a>
                 </div>
-                <a href="app.html" class="px-4 py-2 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors">
+                <div class="flex items-center gap-2 text-sm font-bold text-slate-400 border-l border-slate-200 pl-6">
+                    <a href="#" class="lang-switch transition-colors" data-lang="ja">JP</a>
+                    <span class="text-slate-300 select-none">|</span>
+                    <a href="#" class="lang-switch transition-colors" data-lang="en">EN</a>
+                </div>
+                <a href="app.html" class="px-4 py-2 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors" data-i18n="nav.app">
                     アプリを開く
                 </a>
             </div>
@@ -52,10 +57,14 @@
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-slate-200 absolute w-full left-0 top-16 shadow-lg transition-all duration-300 ease-in-out opacity-0 -translate-y-2">
             <div class="flex flex-col p-4 space-y-4 text-sm font-medium text-slate-600">
-                <a href="index.html" class="block py-2 hover:text-blue-600">ホーム</a>
-                <a href="help.html" class="block py-2 hover:text-blue-600">使い方</a>
-                <a href="privacy.html" class="block py-2 hover:text-blue-600">プライバシー</a>
-                <a href="app.html" class="block py-3 text-center rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700">
+                <a href="index.html" class="block py-2 hover:text-blue-600" data-i18n="nav.home">ホーム</a>
+                <a href="help.html" class="block py-2 hover:text-blue-600" data-i18n="nav.help">使い方</a>
+                <a href="privacy.html" class="block py-2 hover:text-blue-600" data-i18n="nav.privacy">プライバシー</a>
+                <div class="flex items-center gap-4 py-2 border-t border-slate-100 mt-2 pt-4">
+                    <a href="#" class="lang-switch font-bold" data-lang="ja">JP</a>
+                    <a href="#" class="lang-switch font-bold" data-lang="en">EN</a>
+                </div>
+                <a href="app.html" class="block py-3 text-center rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700" data-i18n="nav.app">
                     アプリを開く
                 </a>
             </div>
@@ -191,7 +200,7 @@
             </div>
             <div class="text-sm">
                 &copy; 2026 | v1.4.4 |
-                <a href="https://github.com/eimax9668/CardKnot">GitHub</a>
+                <a href="https://github.com/eimax9668/CardKnot" data-i18n="footer.github">GitHub</a>
             </div>
         </div>
     </footer>
@@ -218,5 +227,6 @@
             });
         }
     </script>
+    <script src="i18n.js"></script>
 </body>
 </html>
