@@ -67,11 +67,16 @@
             </div>
             <div class="hidden md:flex items-center gap-6">
                 <div class="flex items-center gap-6 text-sm font-medium text-slate-600 mr-2">
-                    <a href="index.html" class="hover:text-blue-600 transition-colors">ホーム</a>
-                    <a href="help.html" class="hover:text-blue-600 transition-colors">使い方</a>
-                    <a href="privacy.html" class="hover:text-blue-600 transition-colors">プライバシー</a>
+                    <a href="index.html" class="hover:text-blue-600 transition-colors" data-i18n="nav.home">ホーム</a>
+                    <a href="help.html" class="hover:text-blue-600 transition-colors" data-i18n="nav.help">使い方</a>
+                    <a href="privacy.html" class="hover:text-blue-600 transition-colors" data-i18n="nav.privacy">プライバシー</a>
                 </div>
-                <a href="app.html" class="px-4 py-2 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors">
+                <div class="flex items-center gap-2 text-sm font-bold text-slate-400 border-l border-slate-200 pl-6">
+                    <a href="#" class="lang-switch transition-colors" data-lang="ja">JP</a>
+                    <span class="text-slate-300 select-none">|</span>
+                    <a href="#" class="lang-switch transition-colors" data-lang="en">EN</a>
+                </div>
+                <a href="app.html" class="px-4 py-2 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors" data-i18n="nav.app">
                     アプリを開く
                 </a>
             </div>
@@ -82,10 +87,14 @@
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-slate-200 absolute w-full left-0 top-16 shadow-lg transition-all duration-300 ease-in-out opacity-0 -translate-y-2">
             <div class="flex flex-col p-4 space-y-4 text-sm font-medium text-slate-600">
-                <a href="index.html" class="block py-2 hover:text-blue-600">ホーム</a>
-                <a href="help.html" class="block py-2 hover:text-blue-600">使い方</a>
-                <a href="privacy.html" class="block py-2 hover:text-blue-600">プライバシー</a>
-                <a href="app.html" class="block py-3 text-center rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700">
+                <a href="index.html" class="block py-2 hover:text-blue-600" data-i18n="nav.home">ホーム</a>
+                <a href="help.html" class="block py-2 hover:text-blue-600" data-i18n="nav.help">使い方</a>
+                <a href="privacy.html" class="block py-2 hover:text-blue-600" data-i18n="nav.privacy">プライバシー</a>
+                <div class="flex items-center gap-4 py-2 border-t border-slate-100 mt-2 pt-4">
+                    <a href="#" class="lang-switch font-bold" data-lang="ja">JP</a>
+                    <a href="#" class="lang-switch font-bold" data-lang="en">EN</a>
+                </div>
+                <a href="app.html" class="block py-3 text-center rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700" data-i18n="nav.app">
                     アプリを開く
                 </a>
             </div>
@@ -95,15 +104,15 @@
     <!-- ヒーローセクション -->
     <header class="pt-32 pb-20 px-4 text-center">
         <div class="max-w-4xl mx-auto">
-            <h1 class="text-3xl md:text-6xl font-bold mb-6 leading-tight animate-on-scroll">
+            <h1 class="text-3xl md:text-6xl font-bold mb-6 leading-tight animate-on-scroll" data-i18n="hero.title" data-i18n-html="true">
                 思考を<span class="gradient-text">結び</span>、<br>アイデアを<span class="gradient-text">解き放つ</span>。
             </h1>
-            <p class="text-xl text-slate-600 mb-10 leading-relaxed animate-on-scroll" data-delay="100">
+            <p class="text-xl text-slate-600 mb-10 leading-relaxed animate-on-scroll" data-delay="100" data-i18n="hero.desc" data-i18n-html="true">
                 CardKnotは、無限のキャンバスでアイデアを整理し、<br>
                 直感的につなぎ合わせることができる思考整理ツールです。
             </p>
             <div class="flex justify-center gap-4 mb-16 animate-on-scroll" data-delay="200">
-                <a href="app.html" class="px-8 py-4 rounded-full bg-blue-600 text-white font-bold text-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all transform hover:-translate-y-1">
+                <a href="app.html" class="px-8 py-4 rounded-full bg-blue-600 text-white font-bold text-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all transform hover:-translate-y-1" data-i18n="hero.cta">
                     今すぐ始める（無料）
                 </a>
             </div>
@@ -119,16 +128,16 @@
     <section class="py-20 bg-white">
         <div class="max-w-6xl mx-auto px-4">
             <div class="text-center mb-16 animate-on-scroll">
-                <h2 class="text-3xl font-bold mb-4">CardKnotができること</h2>
-                <p class="text-slate-600">シンプルだけど、パワフルな機能。</p>
+                <h2 class="text-3xl font-bold mb-4" data-i18n="features.title">CardKnotができること</h2>
+                <p class="text-slate-600" data-i18n="features.subtitle">シンプルだけど、パワフルな機能。</p>
             </div>
             <div class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-6 pb-8 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="0">
                     <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-diagram-3"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3">直感的な接続</h3>
-                    <p class="text-slate-600 leading-relaxed mb-4">
+                    <h3 class="text-xl font-bold mb-3" data-i18n="feature.1.title">直感的な接続</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4" data-i18n="feature.1.desc">
                         カードとカードを線で結ぶだけで、関係性を可視化。複雑なアイデアもスッキリ整理できます。
                     </p>
                 </div>
@@ -136,8 +145,8 @@
                     <div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-play-btn"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3">プレゼンテーション</h3>
-                    <p class="text-slate-600 leading-relaxed mb-4">
+                    <h3 class="text-xl font-bold mb-3" data-i18n="feature.2.title">プレゼンテーション</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4" data-i18n="feature.2.desc">
                         作ったマップをそのままスライドショーに。思考のプロセスをスムーズに共有できます。
                     </p>
                 </div>
@@ -145,8 +154,8 @@
                     <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-hdd"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3">ローカル保存</h3>
-                    <p class="text-slate-600 leading-relaxed mb-4">
+                    <h3 class="text-xl font-bold mb-3" data-i18n="feature.3.title">ローカル保存</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4" data-i18n="feature.3.desc">
                         データはブラウザに自動保存。サーバーに送信されないので、プライバシーも安心です。
                     </p>
                 </div>
@@ -156,8 +165,8 @@
                     <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-people-fill"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3">共同作業</h3>
-                    <p class="text-slate-600 leading-relaxed mb-4">
+                    <h3 class="text-xl font-bold mb-3" data-i18n="feature.4.title">共同作業</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4" data-i18n="feature.4.desc">
                     複数人で同時編集。リアルタイムでアイデアを組み立て、変化を一緒に体験できます。
                     </p>
                 </div>
@@ -166,8 +175,8 @@
                     <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-card-image"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3">リッチな情報整理</h3>
-                    <p class="text-slate-600 leading-relaxed mb-4">
+                    <h3 class="text-xl font-bold mb-3" data-i18n="feature.5.title">リッチな情報整理</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4" data-i18n="feature.5.desc">
                     画像やリンク、動画などもカード内に自由に貼り付け、アイディアや資料をひとまとめに整理できます。
                     </p>
                 </div>
@@ -176,8 +185,8 @@
                     <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-download"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3">JSONバックアップ</h3>
-                    <p class="text-slate-600 leading-relaxed mb-4">
+                    <h3 class="text-xl font-bold mb-3" data-i18n="feature.6.title">JSONバックアップ</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4" data-i18n="feature.6.desc">
                     JSONファイルとして簡単に保存・読み込みでき、大切なデータのバックアップや移行が手軽です。
                     </p>
                 </div>
@@ -196,18 +205,18 @@
                     </div>
                 </div>
                 <div class="flex-1 animate-on-scroll" data-delay="200">
-                    <h3 class="text-3xl font-bold mb-4">広大なキャンバスで<br>思考を止めない</h3>
-                    <p class="text-slate-600 text-lg leading-relaxed mb-6">
+                    <h3 class="text-3xl font-bold mb-4" data-i18n="detail.1.title" data-i18n-html="true">広大なキャンバスで<br>思考を止めない</h3>
+                    <p class="text-slate-600 text-lg leading-relaxed mb-6" data-i18n="detail.1.desc">
                         スペースを気にする必要はありません。無限に広がるキャンバスに、思いつくままカードを配置しましょう。ミニマップ機能で全体像もすぐに把握できます。
                     </p>
                     <ul class="space-y-3">
-                        <li class="flex items-center gap-3 text-slate-700">
+                        <li class="flex items-center gap-3 text-slate-700" data-i18n="detail.1.li1">
                             <i class="bi bi-check-circle-fill text-blue-500"></i> ズームイン・アウトで自在に視点操作
                         </li>
-                        <li class="flex items-center gap-3 text-slate-700">
+                        <li class="flex items-center gap-3 text-slate-700" data-i18n="detail.1.li2">
                             <i class="bi bi-check-circle-fill text-blue-500"></i> ドラッグ操作でスムーズな移動
                         </li>
-                        <li class="flex items-center gap-3 text-slate-700">
+                        <li class="flex items-center gap-3 text-slate-700" data-i18n="detail.1.li3">
                             <i class="bi bi-check-circle-fill text-blue-500"></i> ダークモード対応で目に優しい
                         </li>
                     </ul>
@@ -222,18 +231,18 @@
                     </div>
                 </div>
                 <div class="flex-1 animate-on-scroll" data-delay="200">
-                    <h3 class="text-3xl font-bold mb-4">テキストだけじゃない、<br>リッチな情報整理</h3>
-                    <p class="text-slate-600 text-lg leading-relaxed mb-6">
+                    <h3 class="text-3xl font-bold mb-4" data-i18n="detail.2.title" data-i18n-html="true">テキストだけじゃない、<br>リッチな情報整理</h3>
+                    <p class="text-slate-600 text-lg leading-relaxed mb-6" data-i18n="detail.2.desc">
                         文字だけでなく、画像や動画、Webリンクのカードが追加可能。参考資料やデザイン案もまとめて管理できます。
                     </p>
                     <ul class="space-y-3">
-                        <li class="flex items-center gap-3 text-slate-700">
+                        <li class="flex items-center gap-3 text-slate-700" data-i18n="detail.2.li1">
                             <i class="bi bi-check-circle-fill text-blue-500"></i> 画像やYouTube動画を埋め込み再生
                         </li>
-                        <li class="flex items-center gap-3 text-slate-700">
+                        <li class="flex items-center gap-3 text-slate-700" data-i18n="detail.2.li2">
                             <i class="bi bi-check-circle-fill text-blue-500"></i> リンクカードでWebサイトを美しく保存
                         </li>
-                        <li class="flex items-center gap-3 text-slate-700">
+                        <li class="flex items-center gap-3 text-slate-700" data-i18n="detail.2.li3">
                             <i class="bi bi-check-circle-fill text-blue-500"></i> カードのリサイズや色分けで自由に整理
                         </li>
                     </ul>
@@ -245,11 +254,11 @@
     <!-- CTAセクション -->
     <section class="py-20 bg-blue-600 text-white text-center">
         <div class="max-w-4xl mx-auto px-4">
-            <h2 class="text-3xl font-bold mb-6 animate-on-scroll">あなたのアイデアを、<br class="sp-break">形にしよう。</h2>
-            <p class="text-blue-100 text-xl mb-10 animate-on-scroll" data-delay="100">
+            <h2 class="text-3xl font-bold mb-6 animate-on-scroll" data-i18n="cta.title" data-i18n-html="true">あなたのアイデアを、<br class="sp-break">形にしよう。</h2>
+            <p class="text-blue-100 text-xl mb-10 animate-on-scroll" data-delay="100" data-i18n="cta.desc">
                 インストール不要。ブラウザですぐに使えます。
             </p>
-            <a href="app.html" class="inline-block px-10 py-4 rounded-full bg-white text-blue-600 font-bold text-lg shadow-lg hover:bg-blue-50 transition-colors animate-on-scroll" data-delay="200">
+            <a href="app.html" class="inline-block px-10 py-4 rounded-full bg-white text-blue-600 font-bold text-lg shadow-lg hover:bg-blue-50 transition-colors animate-on-scroll" data-delay="200" data-i18n="cta.btn">
                 CardKnotを使ってみる
             </a>
         </div>
@@ -266,7 +275,7 @@
             </div>
             <div class="text-sm">
                 &copy; 2026 | v1.4.4 |
-                <a href="https://github.com/eimax9668/CardKnot">GitHub</a>
+                <a href="https://github.com/eimax9668/CardKnot" data-i18n="footer.github">GitHub</a>
             </div>
         </div>
     </footer>
@@ -314,5 +323,6 @@
             }
         });
     </script>
+    <script src="i18n.js"></script>
 </body>
 </html>
