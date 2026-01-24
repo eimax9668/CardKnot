@@ -123,9 +123,10 @@ function updateTransform() {
 }
 
 function screenToCanvas(x, y) {
+    const rect = viewport.getBoundingClientRect();
     return {
-        x: (x - translateX) / scale,
-        y: (y - translateY) / scale
+        x: (x - rect.left - translateX) / scale,
+        y: (y - rect.top - translateY) / scale
     };
 }
 
