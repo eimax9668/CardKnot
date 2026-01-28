@@ -27,6 +27,8 @@
     <!-- スタイルシート -->
     <link href="./dist/output.css" rel="stylesheet">
     <style>
+        :root{--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
+        *{font-family: "Inter","IBM Plex Sans JP",var(--font-mono);}
         .gradient-text {
             background: linear-gradient(to right, #2563eb, #3b82f6);
             background-clip: text;
@@ -131,8 +133,8 @@
                 <h2 class="text-3xl font-bold mb-4" data-i18n="features.title">CardKnotができること</h2>
                 <p class="text-slate-600" data-i18n="features.subtitle">シンプルだけど、パワフルな機能。</p>
             </div>
-            <div class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-6 pb-8 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="0">
+            <div class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-6 pb-8 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0" style="overflow: scroll">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100" data-delay="0">
                     <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-diagram-3"></i>
                     </div>
@@ -141,7 +143,7 @@
                         カードとカードを線で結ぶだけで、関係性を可視化。複雑なアイデアもスッキリ整理できます。
                     </p>
                 </div>
-                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="100">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100" data-delay="100">
                     <div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-play-btn"></i>
                     </div>
@@ -150,7 +152,7 @@
                         作ったマップをそのままスライドショーに。思考のプロセスをスムーズに共有できます。
                     </p>
                 </div>
-                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100" data-delay="200">
                     <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-hdd"></i>
                     </div>
@@ -159,9 +161,16 @@
                         データはブラウザに自動保存。サーバーに送信されないので、プライバシーも安心です。
                     </p>
                 </div>
-
-
-                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100" data-delay="200" id="feature-7">
+                    <div class="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center text-2xl mb-6">
+                        <i class="bi bi-brush"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3" data-i18n="feature.7.title">手書き</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4" data-i18n="feature.7.desc">
+                        キャンバスに直接書き込み、図解やメモも自由自在。直感的な操作で、表現の幅がさらに広がります。
+                    </p>
+                </div>
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100" data-delay="200">
                     <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-people-fill"></i>
                     </div>
@@ -171,7 +180,7 @@
                     </p>
                 </div>
 
-                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100" data-delay="200">
                     <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-card-image"></i>
                     </div>
@@ -181,7 +190,7 @@
                     </p>
                 </div>
 
-                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100 animate-on-scroll" data-delay="200">
+                <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100" data-delay="200">
                     <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-download"></i>
                     </div>
@@ -299,6 +308,17 @@
                 if (el.dataset.delay) el.style.transitionDelay = el.dataset.delay + 'ms';
                 observer.observe(el);
             });
+
+            // 機能紹介セクションでfeature-3を最初に表示
+            const feature3 = document.getElementById('feature-7');
+            if (feature3) {
+                // 'center'を指定して、スナップの中心に合わせる
+                feature3.scrollIntoView({
+                    behavior: 'auto', // ページロード時はアニメーションなし
+                    block: 'nearest',
+                    inline: 'center'
+                });
+            }
 
             // Mobile Menu Toggle
             const menuBtn = document.getElementById('mobile-menu-btn');
