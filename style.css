@@ -100,6 +100,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    container-type: size;
 }
 
 /* ダークモード時、背景色が指定されているカード（パステルカラー等）の文字色は黒系にする */
@@ -327,9 +328,9 @@ body.dark-mode .card[style*="background-color"] {
     position: absolute;
     top: 6px;
     right: 6px;
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
+    width: clamp(30px, 20cqmin, 36px);
+    height: clamp(30px, 20cqmin, 36px);
+    font-size: clamp(12px, 6cqmin, 20px);
     background: var(--menu-bg);
     color: var(--text-main);
     border-radius: 8px;
@@ -355,8 +356,8 @@ body.dark-mode .card[style*="background-color"] {
     position: absolute;
     bottom: 2px;
     right: 2px;
-    width: 16px;
-    height: 16px;
+    width: clamp(10px, 6cqmin, 24px);
+    height: clamp(10px, 6cqmin, 24px);
     cursor: nwse-resize;
     z-index: 20;
     opacity: 0;
