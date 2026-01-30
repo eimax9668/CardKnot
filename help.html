@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@100;200;300;400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@100;200;300;400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link href="./dist/output.css" rel="stylesheet">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans">
@@ -110,6 +110,58 @@
                 </div>
             </div>
 
+            <!-- カードの種類 -->
+            <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                <h2 class="text-xl font-bold mb-6 text-slate-900 flex items-center gap-2">
+                    <i class="bi bi-collection text-blue-600"></i> カードの種類
+                </h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="flex gap-4">
+                        <div class="text-2xl text-blue-500"><i class="bi bi-card-text"></i></div>
+                        <div>
+                            <h3 class="font-bold mb-1 text-slate-700">テキスト</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">思考やメモを自由に記述できる基本のカードです。</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="text-2xl text-green-500"><i class="bi bi-image"></i></div>
+                        <div>
+                            <h3 class="font-bold mb-1 text-slate-700">画像</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">画像URLを指定して、キャンバス上に画像を表示します。</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="text-2xl text-red-500"><i class="bi bi-camera-video"></i></div>
+                        <div>
+                            <h3 class="font-bold mb-1 text-slate-700">動画</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">YouTubeなどの動画URLを埋め込んで再生できます。</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="text-2xl text-purple-500"><i class="bi bi-link-45deg"></i></div>
+                        <div>
+                            <h3 class="font-bold mb-1 text-slate-700">リンク</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">WebサイトのURLを保存し、サムネイル付きで表示します。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 手書き機能 -->
+            <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                <h2 class="text-xl font-bold mb-6 text-slate-900 flex items-center gap-2">
+                    <i class="bi bi-pencil text-blue-600"></i> 手書き機能
+                </h2>
+                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                    ツールバーの「手書き」ボタンを押すと、キャンバスに自由に線を描くことができます。図解や強調したい部分に活用してください。
+                </p>
+                <ul class="list-disc list-inside text-sm text-slate-600 space-y-2 ml-2">
+                    <li>ペンの色や太さは自由にカスタマイズ可能です。</li>
+                    <li>消しゴムツールを使って、描いた線を部分的に削除できます。</li>
+                    <li>手書きの線もカードと同様に選択して移動させることができます。</li>
+                </ul>
+            </div>
+
             <!-- ショートカットキー -->
             <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
                 <h2 class="text-xl font-bold mb-6 text-slate-900 flex items-center gap-2">
@@ -184,6 +236,31 @@
                         <li class="flex items-center gap-3"><span class="font-mono bg-white px-2 py-1 rounded border border-slate-200 text-xs">←</span> <span>前のスライドに戻る</span></li>
                         <li class="flex items-center gap-3"><span class="font-mono bg-white px-2 py-1 rounded border border-slate-200 text-xs">Esc</span> <span>プレゼンテーションを終了</span></li>
                     </ul>
+                </div>
+            </div>
+
+            <!-- その他の便利機能 -->
+            <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                <h2 class="text-xl font-bold mb-6 text-slate-900 flex items-center gap-2">
+                    <i class="bi bi-stars text-blue-600"></i> その他の便利機能
+                </h2>
+                <div class="grid md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+                    <div>
+                        <h3 class="font-bold mb-2 text-slate-700 flex items-center gap-2"><i class="bi bi-moon"></i> ダークモード</h3>
+                        <p class="text-slate-600">画面右上の月のアイコンで、背景を暗い色に切り替えられます。夜間の作業に最適です。</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-2 text-slate-700 flex items-center gap-2"><i class="bi bi-map"></i> ミニマップ</h3>
+                        <p class="text-slate-600">画面右上のミニマップで、広大なキャンバスのどこにいるかを常に把握できます。</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-2 text-slate-700 flex items-center gap-2"><i class="bi bi-diagram-3"></i> 自動整列</h3>
+                        <p class="text-slate-600">カードのつながりを解析し、見やすい配置に自動で並べ替えます。</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-2 text-slate-700 flex items-center gap-2"><i class="bi bi-people"></i> 共有・共同編集</h3>
+                        <p class="text-slate-600">「共有」ボタンでリンクを発行すれば、他のユーザーと同じキャンバスでリアルタイムに編集できます。</p>
+                    </div>
                 </div>
             </div>
 
