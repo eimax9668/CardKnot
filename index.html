@@ -130,7 +130,7 @@
                 <h2 class="text-3xl font-bold mb-4" data-i18n="features.title">CardKnotができること</h2>
                 <p class="text-slate-600" data-i18n="features.subtitle">シンプルだけど、パワフルな機能。</p>
             </div>
-            <div class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-6 pb-8 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0" style="overflow: scroll">
+            <div id="features-carousel" class="relative flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-6 pb-8 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0" style="overflow: scroll">
                 <div class="snap-center shrink-0 w-full sm:w-80 p-8 rounded-2xl bg-slate-50 border border-slate-100" data-delay="0">
                     <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl mb-6">
                         <i class="bi bi-diagram-3"></i>
@@ -306,15 +306,12 @@
                 observer.observe(el);
             });
 
-            // 機能紹介セクションでfeature-3を最初に表示
-            const feature3 = document.getElementById('feature-7');
-            if (feature3) {
-                // 'center'を指定して、スナップの中心に合わせる
-                feature3.scrollIntoView({
-                    behavior: 'auto', // ページロード時はアニメーションなし
-                    block: 'nearest',
-                    inline: 'center'
-                });
+            // 機能紹介セクションの初期スクロール位置を設定（feature-7を中心に）
+            const carousel = document.getElementById('features-carousel');
+            const feature7 = document.getElementById('feature-7');
+            if (carousel && feature7) {
+                const scrollLeft = feature7.offsetLeft - (carousel.clientWidth - feature7.offsetWidth) / 2;
+                carousel.scrollLeft = scrollLeft;
             }
 
             // Mobile Menu Toggle
