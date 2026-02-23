@@ -26,6 +26,8 @@ const translations = {
         "feature.5.desc": "画像やリンク、動画などもカード内に自由に貼り付け、アイディアや資料をひとまとめに整理できます。",
         "feature.6.title": "JSONバックアップ",
         "feature.6.desc": "JSONファイルとして簡単に保存・読み込みでき、大切なデータのバックアップや移行が手軽です。",
+        "feature.7.title": "手書き",
+        "feature.7.desc": "やフリーハンドの矢印、メモ書きなど、キャンバスに直接書き込み。直感的な操作で、表現の幅がさらに広がります。",
 
         // 詳細
         "detail.1.title": "広大なキャンバスで<br>思考を止めない",
@@ -63,7 +65,7 @@ const translations = {
         // Hero
         "hero.title": 'Connect your <span class="gradient-text">Thoughts</span>,<br>Unleash your <span class="gradient-text">Ideas</span>.',
         "hero.desc": "CardKnot is a thinking tool that allows you to organize ideas on an infinite canvas and connect them intuitively.",
-        "hero.cta": "Get Started (Free)",
+        "hero.cta": "Get started for free",
         
         // Features
         "features.title": "What can you do with CardKnot?",
@@ -80,6 +82,8 @@ const translations = {
         "feature.5.desc": "You can insert images, link, and even videos. You can organize your information easily.",
         "feature.6.title": "Back Ups",
         "feature.6.desc": "You can save your data as a Json file, so your important idea will never get lost.",
+        "feature.7.title": "Handwriting",
+        "feature.7.desc": "Draw diagrams, freehand arrows, and notes directly on the canvas. With intuitive controls, you can expand your expression even further.",
 
         // Details
         "detail.1.title": "Infinite Canvas<br>Infinite Ideas",
@@ -90,9 +94,21 @@ const translations = {
 
         "detail.2.title": "Not only texts",
         "detail.2.desc": "Text, images, web link, and videos...<br>You can manage all of your ideas just by this.",
-        "detail.2.li1": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Import images, and other videos from youtube. You can even play it.",
+        "detail.2.li1": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i>Embed images and YouTube videos.",
         "detail.2.li2": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Save the websites link beautifully by using link card.",
         "detail.2.li3": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Add color and resize your card. Easy to adjust.",
+
+        "detail.3.title": "Instantly Turn Ideas<br>into Presentations",
+        "detail.3.desc": "Play your created map directly as a slideshow. Save time on creating slides and share your thought process smoothly.",
+        "detail.3.li1": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Start presentation mode with one click",
+        "detail.3.li2": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Smooth transitions in order",
+        "detail.3.li3": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Effectively convey your thought process",
+
+        "detail.4.title": "Real-time Team<br>Collaboration",
+        "detail.4.desc": "Edit on the same canvas simultaneously just by sharing a link. Perfect for remote brainstorming sessions.",
+        "detail.4.li1": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Easy sharing by sending an invite link",
+        "detail.4.li2": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> See others' actions in real-time",
+        "detail.4.li3": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Start immediately without registration",
 
         // CTA
         "cta.title": "Shape Your Ideas.",
