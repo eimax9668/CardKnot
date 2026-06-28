@@ -20,8 +20,6 @@ const translations = {
         "feature.2.desc": "作ったマップをそのままスライドショーに。思考のプロセスをスムーズに共有できます。",
         "feature.3.title": "ローカル保存",
         "feature.3.desc": "データはブラウザに自動保存。サーバーに送信されないので、プライバシーも安心です。",
-        "feature.4.title": "共同作業",
-        "feature.4.desc": "複数人で同時編集。リアルタイムでアイデアを組み立て、変化を一緒に体験できます。",
         "feature.5.title": "リッチな情報整理",
         "feature.5.desc": "画像やリンク、動画などもカード内に自由に貼り付け、アイディアや資料をひとまとめに整理できます。",
         "feature.6.title": "JSONバックアップ",
@@ -76,8 +74,6 @@ const translations = {
         "feature.2.desc": "You can use these cards for presentation too. You can easily share your ideas to others.",
         "feature.3.title": "Privacy",
         "feature.3.desc": "Data will be saved in your browser automatically, so it is safe to use.",
-        "feature.4.title": "Collaboration",
-        "feature.4.desc": "You can edit with others in real time. Build your ideas with others, and make it bloom.",
         "feature.5.title": "Images, Links, and more...",
         "feature.5.desc": "You can insert images, link, and even videos. You can organize your information easily.",
         "feature.6.title": "Back Ups",
@@ -103,12 +99,6 @@ const translations = {
         "detail.3.li1": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Start presentation mode with one click",
         "detail.3.li2": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Smooth transitions in order",
         "detail.3.li3": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Effectively convey your thought process",
-
-        "detail.4.title": "Real-time Team<br>Collaboration",
-        "detail.4.desc": "Edit on the same canvas simultaneously just by sharing a link. Perfect for remote brainstorming sessions.",
-        "detail.4.li1": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Easy sharing by sending an invite link",
-        "detail.4.li2": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> See others' actions in real-time",
-        "detail.4.li3": "<i class=\"bi bi-check-circle-fill text-blue-500\"></i> Start immediately without registration",
 
         // CTA
         "cta.title": "Shape Your Ideas.",

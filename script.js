@@ -54,17 +54,10 @@ const USER_COLORS = [
     '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', 
     '#f43f5e', '#64748b'
 ];
-let myCursorId = Math.random().toString(36).substr(2, 9);
-let myCursorColor = localStorage.getItem('cardKnotUserColor') || USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
-let myUserName = localStorage.getItem('cardKnotUserName') || ('User ' + myCursorId.substr(0, 4));
-let currentDrawingColor = myCursorColor;
+let currentDrawingColor = localStorage.getItem('cardKnotUserColor') || USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 let currentDrawingStrokeWidth = 4;
 let currentDrawingPath = null;
 let resizingCardId = null;
-let isRemoteUpdate = false;
-let lastCursorUpdate = 0;
-let lastMousePos = { x: 0, y: 0 };
-let remoteCursors = new Map(); // 相手のカーソル管理用
 
 function getYouTubeVideoId(url) {
     if (!url) return null;
@@ -119,7 +112,6 @@ function updateTransform() {
         
         redrawTimeout = null;
     }, 300);
-    renderRemoteCursors();
 }
 
 function screenToCanvas(x, y) {
@@ -307,17 +299,12 @@ function addCard(x = null, y = null, text = "", imageUrl = "", videoUrl = "", li
     if (textarea) {
         textarea.addEventListener('input', () => {
             saveData();
-            const card = cards.find(c => c.id === cardId);
-            if (window.broadcastCard && card) window.broadcastCard(serializeCard(card));
         });
     }
 
     canvas.appendChild(cardEl);
     cards.push({ id: cardId, el: cardEl, collapsed: collapsed, pinned: pinned, favorite: favorite, imageUrl, videoUrl, linkUrl, baseX: x, baseY: y, type: type, width: width, height: height, linkTitle: linkTitle });
     updateCardStyles(cardEl, x, y, width, height); 
-    if (window.broadcastCard && !isRemoteUpdate) {
-        window.broadcastCard(serializeCard(cards[cards.length - 1]));
-    }
     saveData();
     return cardId;
 }
@@ -341,7 +328,6 @@ function toggleCollapse(cardId) {
     }
     updateConnections();
     saveData();
-    if (window.broadcastCard) window.broadcastCard(serializeCard(cardObj));
 }
 
 function collapseChildren(cardId, visited = new Set()) {
@@ -558,7 +544,6 @@ function addLinkToCard() {
     cardObj.linkUrl = url;
     closeLinkModal();
     saveData();
-    if (window.broadcastCard) window.broadcastCard(serializeCard(cardObj));
 }
 
 function deleteLinkFromCard() {
@@ -574,7 +559,6 @@ function deleteLinkFromCard() {
     cardObj.linkUrl = "";
     closeLinkModal();
     saveData();
-    if (window.broadcastCard) window.broadcastCard(serializeCard(cardObj));
 }
 
 function openLinkCardModal(cardId) {
@@ -635,13 +619,11 @@ function updateSelectionVisuals() {
 function addToSelection(el) {
     selectedCards.add(el);
     updateSelectionVisuals();
-    broadcastMyCursor();
 }
 
 function removeFromSelection(el) {
     selectedCards.delete(el);
     updateSelectionVisuals();
-    broadcastMyCursor();
 }
 
 function clearSelection() {
@@ -649,7 +631,6 @@ function clearSelection() {
     updateSelectionVisuals();
     selectedDrawings.forEach(el => el.classList.remove('selected'));
     selectedDrawings.clear();
-    broadcastMyCursor();
 }
 
 function selectSingleCard(el) {
@@ -658,7 +639,6 @@ function selectSingleCard(el) {
     updateSelectionVisuals();
     selectedDrawings.forEach(el => el.classList.remove('selected'));
     selectedDrawings.clear();
-    broadcastMyCursor();
 }
 
 function updateToolbarColors(hex) {
@@ -730,7 +710,6 @@ function disconnectPoint(cardId, side) {
     });
     updateConnections();
     saveData();
-    if (window.broadcastConnections) window.broadcastConnections(connections);
 }
 
 function updateConnections() {
@@ -884,13 +863,6 @@ const handleMove = (e) => {
         updateTransform();
     }
     
-    lastMousePos = screenToCanvas(clientX, clientY);
-
-    const now = Date.now();
-    if (now - lastCursorUpdate > 100) {
-        broadcastMyCursor();
-        lastCursorUpdate = now;
-    }
 
     if (isSelecting && selectionBox) {
         const currentX = clientX;
@@ -978,9 +950,6 @@ const handleMove = (e) => {
                 if (card) {
                     card.baseX = newX;
                     card.baseY = newY;
-                    if (window.broadcastCard) {
-                        window.broadcastCard({ id: el.id, x: newX, y: newY });
-                    }
                 }
             }
         });
@@ -994,7 +963,6 @@ const handleMove = (e) => {
                     y: p.y + dy
                 }));
                 el.setAttribute('d', pointsToPath(drawing.points));
-                if (window.broadcastDrawing) window.broadcastDrawing(drawing);
             }
         });
         updateConnections();
@@ -1022,8 +990,6 @@ const handleUp = (e) => {
                 fromSide: lineStartSide,
                 toSide: toSide
             });
-
-            if (window.broadcastConnections) window.broadcastConnections(connections);
             const startCardObj = cards.find(c => c.id === lineStartCardId);
             if (startCardObj && (startCardObj.collapsed || startCardObj.el.style.display === 'none')) {
                 const targetCardObj = cards.find(c => c.id === targetCard.id);
@@ -1053,7 +1019,6 @@ const handleUp = (e) => {
     }
     if (isResizing) {
         isResizing = false;
-        if (window.broadcastCard) window.broadcastCard(serializeCard(cards.find(c => c.id === resizingCardId)));
         resizingCardId = null;
         saveData();
     }
@@ -1109,7 +1074,6 @@ function changeColor(color) {
             if (color === '#ffffff') el.style.backgroundColor = '';
             else el.style.backgroundColor = color;
         });
-        selectedCards.forEach(el => { if(window.broadcastCard) window.broadcastCard(serializeCard(cards.find(c => c.id === el.id))); });
         updateToolbarColors(color);
         saveData();
     }
@@ -1125,13 +1089,11 @@ function deleteSelected() {
             selectedCards.forEach(el => {
                 idsToRemove.add(el.id);
                 el.remove();
-                if (window.broadcastDelete) window.broadcastDelete(el.id);
             });
             connections = connections.filter(c => !idsToRemove.has(c.from) && !idsToRemove.has(c.to));
             cards = cards.filter(c => !idsToRemove.has(c.id));
             selectedCards.clear();
             updateConnections();
-            if (window.broadcastConnections) window.broadcastConnections(connections);
         }
 
         // 手書き線の削除
@@ -1140,7 +1102,6 @@ function deleteSelected() {
             selectedDrawings.forEach(el => {
                 drawingIdsToRemove.add(el.id);
                 el.remove();
-                if (window.broadcastDrawingDelete) window.broadcastDrawingDelete(el.id);
             });
             drawings = drawings.filter(d => !drawingIdsToRemove.has(d.id));
             selectedDrawings.clear();
@@ -1148,7 +1109,6 @@ function deleteSelected() {
 
         updateSelectionVisuals();
         saveData();
-        broadcastMyCursor();
     }
 }
 
@@ -1475,187 +1435,6 @@ viewport.addEventListener('dblclick', (e) => {
     }
 });
 
-function copyToClipboardFallback(text) {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-9999px";
-    textArea.style.top = "0";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-        document.execCommand('copy');
-        showToast("リンクをコピーしました");
-    } catch (err) {
-        console.error('Copy failed', err);
-        showToast("コピーに失敗しました");
-    }
-    document.body.removeChild(textArea);
-}
-
-function handleShare() {
-    const btn = document.getElementById('share-btn');
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentRoom = urlParams.get('room');
-
-    if (currentRoom) {
-        // 既にルームにいる場合はリンクをコピー
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                showToast("リンクをコピーしました");
-            }).catch(() => {
-                copyToClipboardFallback(window.location.href);
-            });
-        } else {
-            copyToClipboardFallback(window.location.href);
-        }
-    } else {
-        // ルーム作成
-        // セキュリティ向上のため、推測されにくいUUIDを使用する
-        const roomId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
-            ? crypto.randomUUID() 
-            : Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
-        const newUrl = window.location.pathname + '?room=' + roomId;
-        window.history.pushState({ path: newUrl }, '', newUrl);
-        
-        if (window.connectToRoom) {
-            window.connectToRoom(roomId, myCursorId);
-            showToast("部屋を作成しました");
-        }
-        
-        // ボタンの見た目を更新
-        updateShareButtonState(true);
-    }
-}
-window.handleShare = handleShare;
-
-function updateShareButtonState(hasRoom) {
-    const btn = document.getElementById('share-btn');
-    if (hasRoom) {
-        btn.innerHTML = '<i class="bi bi-link-45deg"></i><span>共有</span>';
-        btn.classList.remove('btn-secondary');
-        btn.classList.add('btn-success');
-    } else {
-        btn.innerHTML = '<i class="bi bi-share"></i><span>共有</span>';
-    }
-}
-
-function createUserNameModal() {
-    if (document.getElementById('username-modal')) return;
-
-    const modal = document.createElement('div');
-    modal.id = 'username-modal';
-    modal.className = 'modal';
-    
-    let colorPaletteHtml = '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; justify-content:center;">';
-    USER_COLORS.forEach(color => {
-        colorPaletteHtml += `<div class="color-dot user-color-option" data-color="${color}" style="background-color:${color};"></div>`;
-    });
-    colorPaletteHtml += '</div>';
-
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h3 style="margin-top:0; margin-bottom:16px; font-size:1.2rem; font-weight:bold;">ユーザー設定</h3>
-            <div style="margin-bottom:8px; font-size:0.9rem; color:var(--text-sub); font-weight:bold;">名前</div>
-            <input type="text" id="username-input" class="modal-input" placeholder="ユーザー名" maxlength="20" style="margin-top:0; margin-bottom:20px;">
-            <div style="margin-bottom:12px; font-size:0.9rem; color:var(--text-sub); font-weight:bold;">カーソル色</div>
-            ${colorPaletteHtml}
-            <div class="modal-buttons">
-                <button class="btn btn-secondary" id="username-cancel-btn">キャンセル</button>
-                <button class="btn btn-primary" id="username-save-btn">保存</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('username-cancel-btn').onclick = closeUserNameModal;
-    document.getElementById('username-save-btn').onclick = saveUserName;
-    
-    const input = document.getElementById('username-input');
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') saveUserName();
-        if (e.key === 'Escape') closeUserNameModal();
-    });
-    
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeUserNameModal();
-    });
-
-    // 色選択のイベント
-    const colorOptions = modal.querySelectorAll('.user-color-option');
-    colorOptions.forEach(opt => {
-        opt.addEventListener('click', () => {
-            colorOptions.forEach(o => o.classList.remove('active-color'));
-            opt.classList.add('active-color');
-        });
-    });
-}
-
-function changeUserName() {
-    createUserNameModal();
-    const modal = document.getElementById('username-modal');
-    const input = document.getElementById('username-input');
-    input.value = myUserName;
-    
-    // 現在の色を選択状態にする
-    const colorOptions = modal.querySelectorAll('.user-color-option');
-    colorOptions.forEach(opt => {
-        if (opt.dataset.color === myCursorColor) {
-            opt.classList.add('active-color');
-        } else {
-            opt.classList.remove('active-color');
-        }
-    });
-
-    modal.style.display = 'flex';
-    input.focus();
-}
-
-function closeUserNameModal() {
-    const modal = document.getElementById('username-modal');
-    if (modal) modal.style.display = 'none';
-}
-
-function saveUserName() {
-    const input = document.getElementById('username-input');
-    const newName = input.value.trim();
-    
-    // 選択された色を取得
-    const activeColorBtn = document.querySelector('.user-color-option.active-color');
-    const newColor = activeColorBtn ? activeColorBtn.dataset.color : myCursorColor;
-    
-    if (newName && newName !== "") {
-        myUserName = newName;
-        myCursorColor = newColor;
-        localStorage.setItem('cardKnotUserName', myUserName);
-        localStorage.setItem('cardKnotUserColor', myCursorColor);
-        broadcastMyCursor();
-        if (window.updateUserNameInPresence) {
-            window.updateUserNameInPresence(myUserName);
-        }
-        showToast("ユーザー設定を保存しました");
-        closeUserNameModal();
-    } else {
-        showToast("ユーザー名を入力してください");
-    }
-}
-
-function initUserName() {
-    if (zoomPercentEl && zoomPercentEl.parentElement) {
-        const separator = document.createElement('div');
-        separator.className = 'zoom-separator';
-        zoomPercentEl.parentElement.appendChild(separator);
-
-        const btn = document.createElement('button');
-        btn.className = 'zoom-btn';
-        btn.innerHTML = '<i class="bi bi-person"></i>';
-        btn.title = "ユーザー名変更";
-        btn.onclick = changeUserName;
-        zoomPercentEl.parentElement.appendChild(btn);
-    }
-}
-
 window.onload = () => {
     if (!loadData()) {
         resetZoom();
@@ -1670,7 +1449,6 @@ window.onload = () => {
     initDarkMode();
     createContextMenu();
     initMinimap();
-    initUserName();
     initDrawingOptions();
     
     // カード追加メニュー外をクリックしたときにメニューを閉じる（モバイルのみ）
@@ -1689,15 +1467,6 @@ window.onload = () => {
             }
         }
     });
-
-    // URLパラメータからルームIDを取得して接続
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get('room');
-    if (roomId) {
-        if (window.connectToRoom) window.connectToRoom(roomId, myCursorId, myUserName);
-        updateShareButtonState(true);
-        showToast("部屋に参加しました");
-    }
 };
 
 function rgbToHex(rgb) {
@@ -1737,8 +1506,6 @@ function saveData(immediate = false) {
         localStorage.setItem('cardKnotData', JSON.stringify(data));
         if (immediate) showToast("保存しました");
 
-        // Supabaseへの保存（ルームにいる場合）
-        if (window.saveRoomToDB) window.saveRoomToDB(data);
     };
 
     if (immediate) {
@@ -1748,12 +1515,6 @@ function saveData(immediate = false) {
     }
 }
 
-// リモートから初期データをロードする関数
-window.loadFromRemote = function(data) {
-    isRemoteUpdate = true;
-    restoreState(data);
-    isRemoteUpdate = false;
-}
 
 function loadData() {
     const json = localStorage.getItem('cardKnotData');
@@ -1930,7 +1691,6 @@ function pasteSelection(clientX = null, clientY = null) {
         });
     });
     updateConnections();
-    if (window.broadcastConnections) window.broadcastConnections(connections);
     saveData();
 }
 
@@ -2110,7 +1870,6 @@ function endFreehandDraw(e) {
 
     if (currentDrawingPath.points.length > 1) {
         drawings.push(currentDrawingPath);
-        if (window.broadcastDrawing) window.broadcastDrawing(currentDrawingPath);
     }
     
     currentDrawingPath = null;
@@ -2133,7 +1892,6 @@ function deleteDrawing(id) {
         const el = document.getElementById(id);
         if (el) el.remove();
         saveData();
-        if (window.broadcastDrawingDelete) window.broadcastDrawingDelete(id);
     }
 }
 
@@ -2180,7 +1938,6 @@ function addDrawingListeners(pathElement) {
                 pathElement.classList.add('selected');
             }
         }
-        broadcastMyCursor();
 
         if (selectedDrawings.has(pathElement)) {
             startDrag(clientX, clientY);
@@ -2252,7 +2009,6 @@ function initDrawingOptions() {
                     if (drawing) {
                         drawing.color = color;
                         el.style.stroke = color;
-                        if (window.broadcastDrawing) window.broadcastDrawing(drawing);
                     }
                 });
                 saveData();
@@ -2276,7 +2032,6 @@ function initDrawingOptions() {
                     if (drawing) {
                         drawing.strokeWidth = currentDrawingStrokeWidth;
                         el.style.strokeWidth = `${currentDrawingStrokeWidth}px`;
-                        if (window.broadcastDrawing) window.broadcastDrawing(drawing);
                     }
                 });
                 saveData();
@@ -2343,20 +2098,6 @@ function showContextMenu(x, y, type = 'card') {
         `;
     }
 
-    // 共有中（ルームIDがある）ならリアクションメニューを追加
-    const isSharing = new URLSearchParams(window.location.search).has('room');
-    if (isSharing) {
-        menuHtml += `
-            <div class="h-px bg-gray-200 my-1"></div>
-            <div class="context-menu-reactions">
-                <div class="reaction-btn" data-emoji="👍">👍</div>
-                <div class="reaction-btn" data-emoji="❤️">❤️</div>
-                <div class="reaction-btn" data-emoji="😂">😂</div>
-                <div class="reaction-btn" data-emoji="🎉">🎉</div>
-                <div class="reaction-btn" data-emoji="😮">😮</div>
-            </div>
-        `;
-    }
 
     contextMenu.innerHTML = menuHtml;
 
@@ -2368,17 +2109,6 @@ function showContextMenu(x, y, type = 'card') {
         });
     });
 
-    contextMenu.querySelectorAll('.reaction-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const emoji = e.currentTarget.dataset.emoji;
-            showReaction(contextMenuPosition.x, contextMenuPosition.y, emoji);
-            if (window.broadcastReaction) {
-                const coords = screenToCanvas(contextMenuPosition.x, contextMenuPosition.y);
-                window.broadcastReaction({ x: coords.x, y: coords.y, emoji });
-            }
-            hideContextMenu();
-        });
-    });
 
     contextMenu.style.display = 'block';
     contextMenu.style.left = x + 'px';
@@ -2423,7 +2153,6 @@ function handleContextMenuAction(action) {
                     card.pinned = newState;
                     newState ? el.classList.add('pinned') : el.classList.remove('pinned');
                 }
-                if (window.broadcastCard) window.broadcastCard(serializeCard(card));
             });
             saveData();
         }
@@ -2445,7 +2174,6 @@ function handleContextMenuAction(action) {
                     card.favorite = newState;
                     newState ? el.classList.add('favorite') : el.classList.remove('favorite');
                 }
-                if (window.broadcastCard) window.broadcastCard(serializeCard(card));
             });
             saveData();
         }
@@ -2902,290 +2630,3 @@ function showToast(message) {
         toast.classList.remove('show');
     }, 2000);
 }
-
-function broadcastMyCursor() {
-    if (window.broadcastCursor) {
-        const selectedIds = Array.from(selectedCards).map(el => el.id);
-        window.broadcastCursor({
-            id: myCursorId,
-            userName: myUserName,
-            x: lastMousePos.x,
-            y: lastMousePos.y,
-            color: myCursorColor,
-            lastActive: Date.now(),
-            selectedIds: selectedIds
-        });
-    }
-}
-
-window.onRemoteCursorUpdate = function(data) {
-    remoteCursors.set(data.id, data);
-    renderRemoteCursors();
-};
-
-window.onRemoteCursorLeave = function(data) {
-    remoteCursors.delete(data.id);
-    renderRemoteCursors();
-};
-
-function renderRemoteCursors() {
-    const now = Date.now();
-    const activeSelections = new Set();
-    const idsToDelete = [];
-
-    remoteCursors.forEach((data, id) => {
-        if (id === myCursorId) return;
-        
-        // 10秒以上更新がないカーソルは削除（通信切断対策）
-        if (now - data.lastActive > 10000) {
-             idsToDelete.push(id);
-             return;
-        }
-
-        const displayName = data.userName || ('User ' + id.substr(0,4));
-        let cursorEl = document.getElementById('cursor-' + id);
-        if (!cursorEl) {
-            cursorEl = document.createElement('div');
-            cursorEl.id = 'cursor-' + id;
-            cursorEl.className = 'remote-cursor';
-            cursorEl.innerHTML = `
-                <svg width="24" height="24" viewBox="0 0 24 24" style="fill:${escapeHtml(data.color)}; stroke:white; stroke-width:1px; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
-                    <path d="M0 0L10 20L14 12L22 10L0 0Z"/>
-                </svg>
-                <div class="cursor-label" style="background-color:${escapeHtml(data.color)}">${escapeHtml(displayName)}</div>
-            `;
-            viewport.appendChild(cursorEl);
-        } else {
-            const label = cursorEl.querySelector('.cursor-label');
-            if (label) {
-                label.innerText = displayName;
-                label.style.backgroundColor = data.color;
-            }
-            const svg = cursorEl.querySelector('svg');
-            if (svg) {
-                svg.style.fill = data.color;
-            }
-        }
-        
-        const screenX = data.x * scale + translateX;
-        const screenY = data.y * scale + translateY;
-        cursorEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
-
-        // 選択枠の描画
-        if (data.selectedIds && Array.isArray(data.selectedIds)) {
-            data.selectedIds.forEach(cardId => {
-                const card = cards.find(c => c.id === cardId);
-                if (card) {
-                    const frameId = `sel-${cardId}-${id}`;
-                    activeSelections.add(frameId);
-                    
-                    let frame = document.getElementById(frameId);
-                    if (!frame) {
-                        frame = document.createElement('div');
-                        frame.id = frameId;
-                        frame.className = 'remote-selection-frame';
-                        frame.style.borderColor = data.color;
-                        frame.innerHTML = `<div class="remote-selection-label" style="background-color:${escapeHtml(data.color)}">${escapeHtml(displayName)}</div>`;
-                        card.el.appendChild(frame);
-                    } else {
-                        // 既存フレームの更新（色が変更された場合など）
-                        frame.style.borderColor = data.color;
-                        const label = frame.querySelector('.remote-selection-label');
-                        if (label) {
-                            label.style.backgroundColor = data.color;
-                            label.innerText = displayName;
-                        }
-                        // 万が一DOMから外れていた場合は再追加
-                        if (frame.parentElement !== card.el) {
-                            card.el.appendChild(frame);
-                        }
-                    }
-                }
-            });
-        }
-    });
-
-    // タイムアウトしたユーザーを削除
-    idsToDelete.forEach(id => remoteCursors.delete(id));
-    
-    // 削除されたユーザーのカーソルを消去
-    const activeIds = new Set(remoteCursors.keys());
-    document.querySelectorAll('.remote-cursor').forEach(el => {
-        const id = el.id.replace('cursor-', '');
-        if (!activeIds.has(id)) {
-            el.remove();
-        }
-    });
-
-    // 非アクティブな選択枠を削除
-    document.querySelectorAll('.remote-selection-frame').forEach(el => {
-        if (!activeSelections.has(el.id)) {
-            el.remove();
-        }
-    });
-}
-
-window.addEventListener('beforeunload', () => {
-    if (window.broadcastLeave) window.broadcastLeave(myCursorId);
-});
-
-window.onRemoteCardUpdate = function(cardData) {
-    isRemoteUpdate = true;
-    const cardId = cardData.id;
-    let card = cards.find(c => c.id === cardId);
-
-    if (!card) {
-        // 新規作成
-        addCard(
-            cardData.x, cardData.y, cardData.text, 
-            cardData.imageUrl, cardData.videoUrl, cardData.linkUrl, 
-            cardId, cardData.color, cardData.collapsed, 
-            cardData.pinned, cardData.favorite, cardData.type, 
-            cardData.width, cardData.height, cardData.linkTitle
-        );
-    } else {
-        // 更新
-        const isBeingDragged = isDragging && Array.from(selectedCards).some(el => el.id === cardId);
-        if (!isBeingDragged) {
-            // 構造的な変更（画像、動画、リンク、タイプ）がある場合は再作成
-            const structuralChange = 
-                (cardData.type !== undefined && card.type !== cardData.type) ||
-                (cardData.imageUrl !== undefined && card.imageUrl !== cardData.imageUrl) ||
-                (cardData.videoUrl !== undefined && card.videoUrl !== cardData.videoUrl) ||
-                (cardData.linkUrl !== undefined && card.linkUrl !== cardData.linkUrl) ||
-                (cardData.linkTitle !== undefined && card.linkTitle !== cardData.linkTitle);
-
-            if (structuralChange) {
-                const newCardData = { ...serializeCard(card), ...cardData };
-                if (selectedCards.has(card.el)) selectedCards.delete(card.el);
-                card.el.remove();
-                cards = cards.filter(c => c.id !== cardId);
-                addCard(newCardData.x, newCardData.y, newCardData.text, newCardData.imageUrl, newCardData.videoUrl, newCardData.linkUrl, cardId, newCardData.color, newCardData.collapsed, newCardData.pinned, newCardData.favorite, newCardData.type, newCardData.width, newCardData.height, newCardData.linkTitle);
-                updateConnections();
-                return;
-            }
-
-            // 位置
-            if (cardData.x !== undefined && cardData.y !== undefined) {
-                card.el.style.left = cardData.x + 'px';
-                card.el.style.top = cardData.y + 'px';
-                card.baseX = cardData.x;
-                card.baseY = cardData.y;
-                updateConnections();
-            }
-            // テキスト
-            if (cardData.text !== undefined) {
-                const ta = card.el.querySelector('.card-textarea');
-                if (ta && ta.value !== cardData.text && document.activeElement !== ta) {
-                    ta.value = cardData.text;
-                }
-            }
-            // 色
-            if (cardData.color !== undefined) {
-                card.el.style.backgroundColor = cardData.color || '';
-            }
-            // サイズ
-            if (cardData.width !== undefined) {
-                card.width = cardData.width;
-                card.height = cardData.height;
-                card.el.style.width = cardData.width + 'px';
-                if (cardData.height) card.el.style.height = cardData.height + 'px';
-                updateConnections();
-            }
-            // 折りたたみ
-            if (cardData.collapsed !== undefined && card.collapsed !== cardData.collapsed) {
-                card.collapsed = cardData.collapsed;
-                const icon = card.el.querySelector('.collapse-btn i');
-                if (card.collapsed) {
-                    card.el.classList.add('collapsed');
-                    icon.className = 'bi bi-chevron-right';
-                    collapseChildren(cardId);
-                } else {
-                    card.el.classList.remove('collapsed');
-                    icon.className = 'bi bi-chevron-down';
-                    expandChildren(cardId);
-                }
-                updateConnections();
-            }
-            // ピン・お気に入り
-            if (cardData.pinned !== undefined) {
-                card.pinned = cardData.pinned;
-                card.pinned ? card.el.classList.add('pinned') : card.el.classList.remove('pinned');
-            }
-            if (cardData.favorite !== undefined) {
-                card.favorite = cardData.favorite;
-                card.favorite ? card.el.classList.add('favorite') : card.el.classList.remove('favorite');
-            }
-        }
-    }
-    isRemoteUpdate = false;
-};
-
-window.onRemoteReaction = function(data) {
-    // キャンバス座標をスクリーン座標に変換して表示
-    const screenX = data.x * scale + translateX;
-    const screenY = data.y * scale + translateY;
-    showReaction(screenX, screenY, data.emoji);
-};
-
-function showReaction(x, y, emoji) {
-    const el = document.createElement('div');
-    el.className = 'reaction-emoji';
-    el.textContent = emoji;
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    document.body.appendChild(el);
-
-    // アニメーション終了後に削除
-    el.addEventListener('animationend', () => {
-        el.remove();
-    });
-    // 万が一のためのタイムアウト
-    setTimeout(() => {
-        if (el.parentNode) el.remove();
-    }, 2000);
-}
-
-window.updateUserCount = function(count) {
-    const el = document.getElementById('user-count');
-    const numEl = document.getElementById('user-count-num');
-    if (el && numEl) {
-        numEl.innerText = count;
-        el.classList.add('active');
-    }
-};
-window.onRemoteDeleteCard = function(data) {
-    isRemoteUpdate = true;
-    const card = cards.find(c => c.id === data.id);
-    if (card) {
-        if (selectedCards.has(card.el)) selectedCards.delete(card.el);
-        card.el.remove();
-        cards = cards.filter(c => c.id !== data.id);
-        updateConnections();
-    }
-    isRemoteUpdate = false;
-};
-
-window.onRemoteConnectionsUpdate = function(newConnections) {
-    isRemoteUpdate = true;
-    connections = newConnections;
-    updateConnections();
-    isRemoteUpdate = false;
-};
-
-window.onRemoteDrawingUpdate = function(drawingData) {
-    isRemoteUpdate = true;
-    const existing = drawings.find(d => d.id === drawingData.id);
-    if (!existing) {
-        drawings.push(drawingData);
-        updateDrawings();
-    }
-    isRemoteUpdate = false;
-};
-
-window.onRemoteDrawingDelete = function(drawingId) {
-    isRemoteUpdate = true;
-    drawings = drawings.filter(d => d.id !== drawingId);
-    updateDrawings();
-    isRemoteUpdate = false;
-};

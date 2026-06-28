@@ -24,14 +24,6 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@100;200;300;400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link href="./dist/output.css" rel="stylesheet">
-    <script type="importmap">
-        {
-          "imports": {
-            "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7"
-          }
-        }
-        </script>
-        <script type="module" src="network.js"></script>
 </head>
 <body>
 
@@ -61,26 +53,27 @@
 </div>
 
     <!-- Presentation Overlay -->
-    <div id="presentation-overlay">
-        <div class="flex justify-between items-center p-6 z-[2010]">
+    <div id="presentation-overlay" class="flex flex-col">
+        <div class="flex justify-between items-center p-4 sm:p-6 z-[2010]">
             <div class="text-xl font-bold opacity-100"><i class="bi bi-play-circle mr-2"></i>スライドショー</div>
-            <button id="pres-close" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-full font-bold transition-colors shadow-lg" onclick="exitPresentation()">
-                <i class="bi bi-x-lg"></i> 終了
+            <button id="pres-close" class="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-5 py-2 rounded-full font-bold transition-colors shadow-lg flex items-center" onclick="exitPresentation()">
+                <i class="bi bi-x-lg"></i><span class="hidden sm:inline ml-2">終了</span>
             </button>
         </div>
         
-        <div id="presentation-card-container">
-            <button class="pres-nav-btn pres-left" onclick="prevSlide()" title="戻る"><i class="bi bi-chevron-left"></i></button>
-            
-            <div id="presentation-card">
+        <div id="presentation-card-container" class="flex-1 flex flex-col items-center justify-center p-4">
+            <div id="presentation-card" class="relative max-w-full max-h-full">
                 <img id="pres-image" style="display:none;">
                 <div id="pres-content"></div>
             </div>
 
-            <button class="pres-nav-btn pres-right" onclick="nextSlide()" title="進む"><i class="bi bi-chevron-right"></i></button>
+            <div class="flex-shrink-0 flex items-center justify-center gap-8 pt-4">
+                <button class="p-4 sm:p-6 text-3xl sm:text-4xl text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all" onclick="prevSlide()" title="戻る"><i class="bi bi-chevron-left"></i></button>
+                <button class="p-4 sm:p-6 text-3xl sm:text-4xl text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all" onclick="nextSlide()" title="進む"><i class="bi bi-chevron-right"></i></button>
+            </div>
         </div>
 
-        <div class="pres-footer">
+        <div class="pres-footer pb-4">
             <span id="pres-current" class="font-bold text-2xl">1</span>
             <span class="opacity-50">/</span>
             <span id="pres-total">1</span>
@@ -223,16 +216,6 @@
             <i class="bi bi-diagram-3"></i><span>整列</span>
         </button>
         
-        <div class="share-wrapper">
-            <button id="share-btn" class="btn btn-secondary" onclick="handleShare()" title="共有">
-                <i class="bi bi-people"></i><span>共有</span>
-            </button>
-            
-            <div id="user-count" class="btn btn-secondary" title="接続人数">
-                <i class="bi bi-people-fill text-green-500"></i><span id="user-count-num">1</span>
-            </div>
-        </div>
-
         <div class="h-6 w-px bg-gray-200"></div>
         
         <div class="relative group card-add-menu-container">
